@@ -70,7 +70,6 @@ public class OrderItem {
                 ", subtotal=" + subtotal +
                 '}';
     }
-
     public static class Builder {
         private String orderItemId;
         private String orderId;

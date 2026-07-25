@@ -42,7 +42,6 @@ public class Order {
 
     protected Order() {
     }
-
     private Order(Builder builder) {
         this.orderId = builder.orderId;
         this.patientId = builder.patientId;
