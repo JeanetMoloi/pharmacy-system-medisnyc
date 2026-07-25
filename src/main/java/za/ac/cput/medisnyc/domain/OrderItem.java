@@ -5,8 +5,6 @@ package za.ac.cput.medisnyc.domain;
    Date: 19 March 2026
 */
 
-
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
