@@ -1,0 +1,244 @@
+.admin-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+
+.admin-nav-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+}
+
+.admin-nav-link.active {
+    background: var(--pine);
+    color: #fff;
+    border-color: var(--pine);
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.stat-card-value {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--pine-dark);
+}
+
+.stat-card-label {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+}
+
+.stat-card.warn .stat-card-value {
+    color: var(--error);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.admin-table th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    padding: 10px 14px;
+    background: var(--paper);
+    border-bottom: 1px solid var(--border);
+}
+
+.admin-table td {
+    padding: 12px 14px;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-role-select {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12.5px;
+}
+
+.admin-linked-id-input {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12.5px;
+    width: 110px;
+    background: var(--paper);
+    color: var(--ink);
+}
+.admin-linked-id-input:focus {
+    outline: none;
+    border-color: var(--pine);
+}
+
+.admin-toggle-btn,
+.admin-delete-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 6px;
+}
+
+.admin-toggle-btn:hover {
+    background: var(--paper);
+}
+
+.admin-delete-btn {
+    color: var(--error);
+    border-color: rgba(178, 58, 58, 0.3);
+}
+
+.admin-delete-btn:hover {
+    background: var(--error-soft);
+}
+
+.pill-enabled,
+.pill-disabled {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 20px;
+}
+
+.pill-enabled {
+    background: #d9ecdf;
+    color: var(--pine-dark);
+}
+
+.pill-disabled {
+    background: var(--error-soft);
+    color: var(--error);
+}
+
+.linked-id-value {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--ink);
+}
+
+.linked-id-change-btn {
+    display: block;
+    margin-top: 3px;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.pill-unlinked {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: var(--amber-soft);
+    color: var(--amber);
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
+.link-profile-btn {
+    display: block;
+    border: 1px solid var(--amber);
+    background: transparent;
+    color: var(--amber);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.link-profile-btn:hover {
+    background: var(--amber-soft);
+}
+
+.link-profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+}
+
+.link-profile-form input,
+.link-profile-form select {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12.5px;
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.link-profile-form-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.link-profile-form-actions button {
+    flex: 1;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.link-profile-save-btn {
+    border: 1px solid var(--pine);
+    background: var(--pine);
+    color: #fff;
+}
+
+.link-profile-cancel-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--ink-soft);
+}
+
+.link-profile-error {
+    font-size: 11px;
+    color: var(--error);
+}

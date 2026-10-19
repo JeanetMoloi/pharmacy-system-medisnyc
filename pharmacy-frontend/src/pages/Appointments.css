@@ -1,0 +1,373 @@
+/* ---------- Header ---------- */
+.book-header {
+    margin-bottom: 24px;
+}
+.book-header h1 {
+    margin-bottom: 4px;
+}
+.book-sub {
+    color: var(--ink-soft);
+    font-size: 14px;
+}
+
+/* ---------- Doctor picker (used by BookAppointment.jsx) ---------- */
+.book-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 30px;
+    max-width: 600px;
+}
+.doctor-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.doctor-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 150ms, box-shadow 150ms, background 150ms;
+}
+.doctor-option:hover {
+    border-color: var(--sage);
+}
+.doctor-option.selected {
+    border-color: var(--pine);
+    background: #eef4f1;
+    box-shadow: 0 0 0 2px var(--pine);
+}
+.doctor-option-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+}
+.doctor-option-spec {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+}
+.doctor-option-radio {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    box-sizing: border-box;
+    transition: border-color 150ms, background 150ms, box-shadow 150ms;
+}
+.doctor-option.selected .doctor-option-radio {
+    border-color: var(--pine);
+    background: var(--pine);
+    box-shadow: inset 0 0 0 3px var(--paper);
+}
+.doctor-empty {
+    color: var(--ink-soft);
+    padding: 16px 0;
+}
+
+/* ---------- Doctor grid ---------- */
+.doctor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.doctor-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 150ms, box-shadow 150ms, background 150ms;
+}
+.doctor-card:hover {
+    border-color: var(--sage);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+.doctor-card.selected {
+    border-color: var(--pine);
+    background: #eef4f1;
+    box-shadow: 0 0 0 2px var(--pine);
+}
+
+.doctor-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--sage-soft, #e6edea);
+    color: var(--pine);
+    font-weight: 700;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    text-transform: uppercase;
+}
+
+.doctor-card-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+}
+.doctor-card-spec {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+}
+
+/* ---------- Doctor details card ---------- */
+.doctor-details-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 30px;
+    margin-bottom: 28px;
+    animation: fadeSlide 0.25s ease;
+}
+
+@keyframes fadeSlide {
+    0% { opacity: 0; transform: translateY(-8px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.details-header {
+    margin-bottom: 16px;
+}
+.details-header h3 {
+    margin: 0;
+    font-size: 22px;
+    color: var(--ink);
+}
+.details-specialty {
+    margin: 2px 0 0;
+    color: var(--ink-soft);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.details-body {
+    margin-bottom: 20px;
+}
+.details-bio {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+    margin-bottom: 14px;
+}
+.details-conditions {
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+.details-conditions strong {
+    display: block;
+    margin-bottom: 4px;
+}
+.details-conditions ul {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--ink);
+}
+.details-conditions li {
+    margin-bottom: 2px;
+}
+.details-experience {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 0;
+}
+
+.select-to-book-btn {
+    background: var(--pine);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 120ms;
+    width: 100%;
+}
+.select-to-book-btn:hover {
+    background: var(--pine-dark, #2a5f4b);
+}
+
+/* ---------- Appointment form ---------- */
+.book-form-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 30px;
+    max-width: 600px;
+}
+.book-form-card h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+}
+.selected-doctor-info {
+    margin: 0 0 20px;
+    color: var(--ink);
+    font-size: 14px;
+}
+.select-doctor-hint {
+    margin: 0 0 20px;
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-style: italic;
+}
+
+/* ---------- Form fields ---------- */
+.form-group {
+    margin-bottom: 18px;
+}
+.form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: var(--ink);
+}
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--paper);
+    color: var(--ink);
+    transition: border 120ms;
+    box-sizing: border-box;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--pine);
+}
+
+.book-submit {
+    width: 100%;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    border-radius: 8px;
+    background: var(--pine);
+    color: #fff;
+    cursor: pointer;
+    transition: background 120ms;
+}
+.book-submit:hover:not(:disabled) {
+    background: var(--pine-dark, #2a5f4b);
+}
+.book-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ---------- Loading / empty ---------- */
+.book-loading,
+.book-empty {
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 20px 0;
+}
+/* ---------- Appointment list (Appointments.jsx / TodaysAppointments.jsx) ---------- */
+.appts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.appts-eyebrow {
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    margin-bottom: 6px;
+}
+.appts-sub {
+    color: var(--ink-soft);
+    font-size: 14px;
+}
+.appts-book-btn {
+    width: auto;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 18px;
+    font-size: 13.5px;
+}
+
+.appts-loading,
+.appts-empty {
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 36px 20px;
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+.appts-empty p {
+    margin-bottom: 16px;
+}
+
+.appts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.appts-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+}
+.appts-row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.appts-row-id {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+}
+.appts-row-parties {
+    font-size: 14px;
+    color: var(--ink);
+}
+.appts-row-reason {
+    font-size: 13px;
+    color: var(--ink-soft);
+}
+.appts-row-side {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.appts-cancel-btn {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 13px;
+}
