@@ -1,0 +1,46 @@
+.profile-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.profile-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 6px;
+}
+
+.profile-roles {
+    display: flex;
+    gap: 8px;
+}
+
+.profile-role-chip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    color: var(--pine-dark);
+    padding: 5px 11px;
+    border-radius: 20px;
+}
+
+.profile-loading {
+    color: var(--ink-soft);
+}
+
+.profile-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 30px;
+    max-width: 560px;
+}
