@@ -1,0 +1,60 @@
+.dash-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 8px;
+}
+
+.dash-sub {
+    margin-top: 10px;
+    color: var(--ink-soft);
+    max-width: 60ch;
+}
+
+.dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+}
+
+.dash-tile {
+    display: block;
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.dash-tile:hover {
+    border-color: var(--pine);
+    transform: translateY(-2px);
+}
+
+.dash-tile-muted {
+    color: var(--ink-soft);
+    cursor: default;
+}
+
+.dash-tile-muted:hover {
+    border-color: var(--border);
+    transform: none;
+}
+
+.dash-tile-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: var(--ink);
+}
+
+.dash-tile p {
+    font-size: 13.5px;
+    line-height: 1.5;
+}

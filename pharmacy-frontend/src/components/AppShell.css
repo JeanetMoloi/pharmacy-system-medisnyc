@@ -1,0 +1,92 @@
+
+.shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.shell-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 32px;
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--border);
+}
+
+.shell-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.shell-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--pine);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.shell-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.shell-role-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--amber-soft);
+    color: var(--pine-dark);
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.shell-link {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.shell-link:hover {
+    color: var(--pine);
+}
+
+.shell-logout {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+}
+
+.shell-logout:hover {
+    background: var(--paper);
+    color: var(--error);
+    border-color: rgba(178, 58, 58, 0.3);
+}
+
+.shell-content {
+    flex: 1;
+    padding: 40px 32px;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
+}
