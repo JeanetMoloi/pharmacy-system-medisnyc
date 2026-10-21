@@ -1,0 +1,240 @@
+AuthLayout.css
+.auth-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(280px, 400px) 1fr;
+}
+
+/* ---------- Brand panel ---------- */
+
+.auth-brand {
+    background: var(--pine);
+    color: #eaf2ee;
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-brand::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 85% 0%, rgba(255, 255, 255, 0.06), transparent 55%);
+    pointer-events: none;
+}
+
+.auth-brand-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.auth-mark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--amber);
+    color: var(--pine-dark);
+    flex-shrink: 0;
+}
+
+.auth-brand-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: 0.01em;
+}
+
+.auth-brand-sub {
+    font-size: 12.5px;
+    color: #bcd4c9;
+    margin-top: 2px;
+}
+
+.auth-flow {
+    margin: 48px 0;
+}
+
+.auth-flow-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber-soft);
+    margin-bottom: 20px;
+}
+
+.auth-flow-rail {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 2px solid rgba(255, 255, 255, 0.18);
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+}
+
+.auth-flow-step {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14.5px;
+    color: #cfe0d8;
+}
+
+.auth-flow-dot {
+    position: absolute;
+    left: -25px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #4d6d61;
+    border: 2px solid var(--pine);
+}
+
+.auth-flow-step:first-child .auth-flow-dot {
+    background: var(--amber);
+    box-shadow: 0 0 0 4px rgba(201, 122, 43, 0.25);
+}
+
+.auth-flow-step:first-child .auth-flow-text {
+    color: #fff;
+    font-weight: 600;
+}
+
+.auth-flow-you {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--amber-soft);
+    border: 1px solid rgba(241, 217, 184, 0.4);
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-left: 4px;
+}
+
+.auth-brand-foot {
+    font-size: 13px;
+    color: #a9c4b8;
+    max-width: 30ch;
+}
+
+/* ---------- Form panel ---------- */
+
+.auth-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--paper-raised);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 20px 40px -24px rgba(22, 36, 31, 0.25);
+    overflow: hidden;
+}
+
+.auth-card-stub {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 22px;
+    background: var(--paper);
+    border-bottom: 1px dashed var(--border);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    position: relative;
+}
+
+.auth-card-stub::before,
+.auth-card-stub::after {
+    content: "";
+    position: absolute;
+    bottom: -7px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 1px solid var(--border);
+}
+
+.auth-card-stub::before {
+    left: -7px;
+}
+
+.auth-card-stub::after {
+    right: -7px;
+}
+
+.auth-card-body {
+    padding: 34px 32px 30px;
+}
+
+.auth-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 8px;
+}
+
+.auth-title {
+    font-size: 25px;
+}
+
+.auth-subtitle {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--ink-soft);
+}
+
+.auth-form-area {
+    margin-top: 26px;
+}
+
+.auth-footer {
+    margin-top: 22px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    text-align: center;
+}
+
+.auth-footer a {
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+    .auth-shell {
+        grid-template-columns: 1fr;
+    }
+    .auth-brand {
+        padding: 28px 24px;
+    }
+    .auth-flow {
+        margin: 28px 0;
+    }
+}
