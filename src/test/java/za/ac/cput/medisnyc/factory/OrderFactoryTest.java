@@ -9,8 +9,8 @@ package za.ac.cput.medisnyc.factory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import za.ac.cput.domain.Order;
-import za.ac.cput.domain.OrderStatus;
+import za.ac.cput.medisnyc.domain.Order;
+import za.ac.cput.medisnyc.domain.OrderStatus;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

@@ -23,7 +23,6 @@ export default function PrescriptionQueue() {
     const [advancingId, setAdvancingId] = useState(null);
 
     function load() {
-        setLoading(true);
         processingApi
             .getQueue()
             .then(setQueue)

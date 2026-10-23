@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import AppShell from "../components/AppShell";
 import { Alert } from "../components/Field";
 import StatusBadge from "../components/StatusBadge";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import * as processingApi from "../api/prescriptionProcessingApi";
 import { parseApiError } from "../utils/parseApiError";
 import "./Appointments.css";

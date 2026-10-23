@@ -1,5 +1,4 @@
 
-notification.js
 import client from "./client";
 
 // Module 5 — Notify Patient API. Maps onto NotificationController (/api/notifications).

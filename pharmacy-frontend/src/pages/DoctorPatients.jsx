@@ -2,10 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
-import ConsultNav from "../components/ConsultNav";
+import ConsultNav from "../components/ConsultNav.jsx";
 import { Alert } from "../components/Field";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import * as appointmentApi from "../api/appointmentApi";
+import { formatPatientName, getPatientDetails } from "../utils/patientLookup";
 import { parseApiError } from "../utils/parseApiError";
 import "./Appointments.css";
 import "./Admin.css";
@@ -13,13 +14,19 @@ import "./Admin.css";
 export default function DoctorPatients() {
     const { profileId } = useAuth();
     const [appointments, setAppointments] = useState([]);
+    const [patientDetails, setPatientDetails] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
         appointmentApi
             .getAppointmentsByDoctor(profileId())
-            .then(setAppointments)
+            .then(async (data) => {
+                setAppointments(data);
+                const patients = await Promise.all([...new Set(data.map((appointment) => appointment.patientId))]
+                    .map(async (patientId) => [patientId, await getPatientDetails(patientId)]));
+                setPatientDetails(Object.fromEntries(patients));
+            })
             .catch((err) => setError(parseApiError(err).message))
             .finally(() => setLoading(false));
     }, [profileId]);
@@ -75,7 +82,7 @@ export default function DoctorPatients() {
                     <tbody>
                     {patients.map((p) => (
                         <tr key={p.patientId}>
-                            <td>{p.patientId}</td>
+                            <td>{formatPatientName(patientDetails[p.patientId], p.patientId)}</td>
                             <td>{p.visitCount}</td>
                             <td>{p.lastVisit.toLocaleDateString()}</td>
                             <td>{p.lastReason || "—"}</td>

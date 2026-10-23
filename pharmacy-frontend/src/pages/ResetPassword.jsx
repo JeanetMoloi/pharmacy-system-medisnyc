@@ -1,7 +1,7 @@
 
 
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { Field, Alert } from "../components/Field";
 import { resetPassword } from "../api/authApi";
@@ -10,10 +10,10 @@ import "../components/Form.css";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [form, setForm] = useState({
-    token: location.state?.token || "",
+    token: searchParams.get("token") || "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -51,11 +51,7 @@ export default function ResetPassword() {
     <AuthLayout
       eyebrow="Account access"
       title="Reset your password"
-      subtitle={
-        location.state?.email
-          ? `We generated a token for ${location.state.email}. Set a new password below.`
-          : "Paste the reset token you were given, then set a new password."
-      }
+      subtitle="Paste the reset token from your email, then set a new password."
       footer={
         <>
           <Link to="/login">Back to sign in</Link>

@@ -1,4 +1,3 @@
-field.jsx
 export function Field({ label, error, ...inputProps }) {
   return (
     <div className="field">

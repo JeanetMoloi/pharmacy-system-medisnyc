@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import AdminNav from "../components/AdminNav";
 import { Alert } from "../components/Field";
-import CreateDoctorLoginForm from "../components/CreateDoctorLoginForm";
+import CreateDoctorLoginForm from "../components/CreateDoctorLoginForm.jsx";
 import * as doctorApi from "../api/doctorApi";
 import { parseApiError } from "../utils/parseApiError";
 import "./Admin.css";
@@ -15,7 +15,9 @@ const EMPTY_EDIT = { firstName: "", lastName: "", specialization: "", phoneNumbe
 export default function DoctorsList() {
     const location = useLocation();
     const [doctors, setDoctors] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [specializations, setSpecializations] = useState([]);
+    const [specializationFilter, setSpecializationFilter] = useState("");
+    const [loadedFilter, setLoadedFilter] = useState(null);
     const [error, setError] = useState("");
     const [loginFormFor, setLoginFormFor] = useState(null);
     const [justCreatedLogin, setJustCreatedLogin] = useState(false);
@@ -25,15 +27,30 @@ export default function DoctorsList() {
     const [editError, setEditError] = useState("");
     const [busyId, setBusyId] = useState(null);
 
-    function load() {
-        doctorApi
-            .getAllDoctors()
-            .then(setDoctors)
+    useEffect(() => {
+        doctorApi.getSpecializations()
+            .then(setSpecializations)
             .catch((err) => setError(parseApiError(err).message))
-            .finally(() => setLoading(false));
-    }
+    }, []);
 
-    useEffect(load, []);
+    useEffect(() => {
+        let cancelled = false;
+        doctorApi
+            .getDoctors(specializationFilter || undefined)
+            .then((result) => {
+                if (!cancelled) setDoctors(result);
+            })
+            .catch((err) => {
+                if (!cancelled) setError(parseApiError(err).message);
+            })
+            .finally(() => {
+                if (!cancelled) setLoadedFilter(specializationFilter);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [specializationFilter]);
+    const loading = loadedFilter !== specializationFilter;
 
     function startEdit(doctor) {
         setEditingId(doctor.doctorId);
@@ -57,7 +74,14 @@ export default function DoctorsList() {
         setEditError("");
         try {
             const updated = await doctorApi.updateDoctor(doctorId, editForm);
-            setDoctors((prev) => prev.map((d) => (d.doctorId === doctorId ? updated : d)));
+            setDoctors((previous) => previous.flatMap((doctor) => {
+                if (doctor.doctorId !== doctorId) return [doctor];
+                if (specializationFilter &&
+                    updated.specialization?.toLowerCase() !== specializationFilter.toLowerCase()) {
+                    return [];
+                }
+                return [updated];
+            }));
             setEditingId(null);
         } catch (err) {
             setEditError(parseApiError(err).message);
@@ -100,6 +124,24 @@ export default function DoctorsList() {
             <Alert type="error">{error}</Alert>
             {location.state?.justAdded && <Alert type="success">Doctor added.</Alert>}
             {justCreatedLogin && <Alert type="success">Login created. The doctor can now sign in directly.</Alert>}
+
+            <div className="doctor-directory-filter">
+                <label className="field-label" htmlFor="doctor-specialization-filter">Filter by specialization</label>
+                <select
+                    id="doctor-specialization-filter"
+                    className="field-select"
+                    value={specializationFilter}
+                    onChange={(event) => {
+                        setError("");
+                        setSpecializationFilter(event.target.value);
+                    }}
+                >
+                    <option value="">All doctors</option>
+                    {specializations.map((specialization) => (
+                        <option key={specialization} value={specialization}>{specialization}</option>
+                    ))}
+                </select>
+            </div>
 
             {loginFormFor && (
                 <CreateDoctorLoginForm
@@ -153,12 +195,19 @@ export default function DoctorsList() {
                                     </div>
                                 </td>
                                 <td>
-                                    <input
+                                    <select
                                         className="admin-linked-id-input"
-                                        style={{ width: "110px" }}
                                         value={editForm.specialization}
                                         onChange={(e) => setEditForm((p) => ({ ...p, specialization: e.target.value }))}
-                                    />
+                                    >
+                                        {!specializations.includes(editForm.specialization) && editForm.specialization && (
+                                            <option value={editForm.specialization}>{editForm.specialization} (legacy)</option>
+                                        )}
+                                        <option value="">Choose specialization</option>
+                                        {specializations.map((specialization) => (
+                                            <option key={specialization} value={specialization}>{specialization}</option>
+                                        ))}
+                                    </select>
                                 </td>
                                 <td>
                                     <input

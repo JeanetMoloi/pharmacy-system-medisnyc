@@ -1,6 +1,3 @@
-Same
-
-Consultations.css
 
 .consult-toggle-btn {
     width: auto;
@@ -119,4 +116,19 @@ textarea.field-input {
     justify-content: center;
     margin: 0 auto 16px;
     font-size: 22px;
+}
+
+.alert-warning {
+    background: var(--amber-soft);
+    border: 1px solid var(--amber);
+    border-radius: 8px;
+    color: var(--pine-dark);
+    font-size: 13.5px;
+    line-height: 1.45;
+    margin-bottom: 18px;
+    padding: 11px 14px;
+}
+
+.appointment-retry {
+    margin-top: 10px;
 }

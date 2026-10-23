@@ -1,12 +1,13 @@
-CounsultationForm.jsx
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import { Field, SelectField, Alert } from "../components/Field";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import * as consultationApi from "../api/consultationApi";
 import * as medicationApi from "../api/medicationApi";
+import * as appointmentApi from "../api/appointmentApi";
+import { getPatientDetails, formatPatientName } from "../utils/patientLookup";
 import { parseApiError } from "../utils/parseApiError";
 import "../components/Form.css";
 import "./Consultations.css";
@@ -18,15 +19,20 @@ function emptyItem() {
 export default function ConsultationForm() {
     const { profileId } = useAuth();
     const [params] = useSearchParams();
-    const navigate = useNavigate();
-
     const patientId = params.get("patientId") || "";
     const appointmentId = params.get("appointmentId") || "";
+    const doctorId = profileId();
 
     const [record, setRecord] = useState({ diagnosis: "", consultationNotes: "", treatmentPlan: "" });
     const [recordSaved, setRecordSaved] = useState(false);
     const [savingRecord, setSavingRecord] = useState(false);
     const [recordError, setRecordError] = useState("");
+    const [appointmentError, setAppointmentError] = useState("");
+    const [appointmentRetrying, setAppointmentRetrying] = useState(false);
+    const [patientDetails, setPatientDetails] = useState(null);
+    const [patientAppointments, setPatientAppointments] = useState([]);
+    const [selectedAppointmentId, setSelectedAppointmentId] = useState(appointmentId);
+    const [appointmentListError, setAppointmentListError] = useState("");
 
     const [medications, setMedications] = useState([]);
     const [rxItems, setRxItems] = useState([emptyItem()]);
@@ -39,6 +45,56 @@ export default function ConsultationForm() {
         medicationApi.getAllMedications().then(setMedications).catch(() => setMedications([]));
     }, []);
 
+    useEffect(() => {
+        let active = true;
+        getPatientDetails(patientId).then((patient) => {
+            if (active) setPatientDetails(patient);
+        });
+        return () => {
+            active = false;
+        };
+    }, [patientId]);
+
+    useEffect(() => {
+        if (appointmentId || !patientId) return undefined;
+        let active = true;
+        appointmentApi.getAppointmentsByDoctor(doctorId)
+            .then((appointments) => {
+                if (!active) return;
+                setPatientAppointments(appointments.filter((appointment) =>
+                    appointment.patientId === patientId &&
+                    ["SCHEDULED", "CONFIRMED"].includes(appointment.status)));
+            })
+            .catch((err) => {
+                if (active) setAppointmentListError(parseApiError(err).message);
+            });
+        return () => {
+            active = false;
+        };
+    }, [appointmentId, patientId, doctorId]);
+
+    async function completeAppointment(targetAppointmentId) {
+        if (!targetAppointmentId) return;
+        setAppointmentError("");
+        setAppointmentRetrying(true);
+        try {
+            const appointment = await appointmentApi.getAppointmentById(targetAppointmentId);
+            if (appointment.status === "SCHEDULED") {
+                await appointmentApi.updateAppointmentStatus(targetAppointmentId, "CONFIRMED");
+                await appointmentApi.updateAppointmentStatus(targetAppointmentId, "COMPLETED");
+            } else if (appointment.status === "CONFIRMED") {
+                await appointmentApi.updateAppointmentStatus(targetAppointmentId, "COMPLETED");
+            } else if (appointment.status !== "COMPLETED") {
+                setAppointmentError("This appointment cannot be marked completed in its current status.");
+                return;
+            }
+        } catch (err) {
+            setAppointmentError(parseApiError(err).message);
+        } finally {
+            setAppointmentRetrying(false);
+        }
+    }
+
     function updateRecord(field, value) {
         setRecord((prev) => ({ ...prev, [field]: value }));
     }
@@ -50,11 +106,11 @@ export default function ConsultationForm() {
         try {
             await consultationApi.createMedicalRecord({
                 patientId,
-                doctorId: profileId(),
-                appointmentId: appointmentId || null,
+                appointmentId: selectedAppointmentId || null,
                 ...record,
             });
             setRecordSaved(true);
+            if (selectedAppointmentId) await completeAppointment(selectedAppointmentId);
         } catch (err) {
             setRecordError(parseApiError(err).message);
         } finally {
@@ -101,7 +157,6 @@ export default function ConsultationForm() {
         try {
             await consultationApi.createPrescription({
                 patientId,
-                doctorId: profileId(),
                 expiryDate: rxDetails.expiryDate,
                 instructions: rxDetails.instructions,
                 refillsAllowed: rxDetails.refillsAllowed,
@@ -115,13 +170,17 @@ export default function ConsultationForm() {
         }
     }
 
+    const appointmentDateLabel = (date) => new Date(date).toLocaleString();
+
     if (rxSaved) {
         return (
             <AppShell>
                 <div className="consult-card consult-done">
                     <div className="consult-done-mark">✓</div>
                     <h2>Consultation complete</h2>
-                    <p className="consult-card-sub">Medical record and prescription have been saved for {patientId}.</p>
+                    <p className="consult-card-sub">
+                        Medical record and prescription have been saved for {formatPatientName(patientDetails, patientId)}.
+                    </p>
                     <Link to="/consultations" className="btn-primary" style={{ display: "inline-block", width: "auto", padding: "10px 22px", textDecoration: "none" }}>
                         Back to today's appointments
                     </Link>
@@ -135,16 +194,47 @@ export default function ConsultationForm() {
             <div className="appts-eyebrow">Module 3</div>
             <h1>Consultation</h1>
             <div className="consult-context">
-                <span>PATIENT: {patientId || "—"}</span>
-                {appointmentId && <span>APPOINTMENT: {appointmentId}</span>}
+                <span>PATIENT: {formatPatientName(patientDetails, patientId || "—")}</span>
+                {selectedAppointmentId && <span>APPOINTMENT: {selectedAppointmentId}</span>}
             </div>
 
             <div className="consult-card">
                 <h2>1. Medical record</h2>
                 <p className="consult-card-sub">Diagnosis, notes, and the treatment plan for this visit.</p>
+                {!appointmentId && !recordSaved && (
+                    <>
+                        <SelectField
+                            id="appointmentId"
+                            label="Link to an appointment (optional)"
+                            value={selectedAppointmentId}
+                            onChange={(event) => setSelectedAppointmentId(event.target.value)}
+                        >
+                            <option value="">No appointment</option>
+                            {patientAppointments.map((appointment) => (
+                                <option key={appointment.appointmentId} value={appointment.appointmentId}>
+                                    {appointmentDateLabel(appointment.appointmentDate)} — {appointment.status}
+                                </option>
+                            ))}
+                        </SelectField>
+                        <Alert type="error">{appointmentListError}</Alert>
+                    </>
+                )}
                 <form onSubmit={handleSaveRecord} noValidate>
                     <Alert type="error">{recordError}</Alert>
                     {recordSaved && <Alert type="success">Medical record saved.</Alert>}
+                    {appointmentError && (
+                        <div className="alert alert-warning" role="alert">
+                            <p>{appointmentError} Your medical record is saved.</p>
+                            <button
+                                type="button"
+                                className="btn-secondary appointment-retry"
+                                disabled={appointmentRetrying}
+                                onClick={() => completeAppointment(selectedAppointmentId)}
+                            >
+                                {appointmentRetrying ? "Updating…" : "Mark appointment completed"}
+                            </button>
+                        </div>
+                    )}
 
                     <Field
                         id="diagnosis"

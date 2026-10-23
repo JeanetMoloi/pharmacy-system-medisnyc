@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import AdminNav from "../components/AdminNav";
-import { Field, Alert } from "../components/Field";
+import { Field, SelectField, Alert } from "../components/Field";
 import * as doctorApi from "../api/doctorApi";
 import { parseApiError } from "../utils/parseApiError";
 import "../components/Form.css";
@@ -15,6 +15,15 @@ export default function AddDoctor() {
     const [form, setForm] = useState(EMPTY);
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [specializations, setSpecializations] = useState([]);
+    const [loadingSpecializations, setLoadingSpecializations] = useState(true);
+
+    useEffect(() => {
+        doctorApi.getSpecializations()
+            .then(setSpecializations)
+            .catch((err) => setError(parseApiError(err).message))
+            .finally(() => setLoadingSpecializations(false));
+    }, []);
 
     function update(field, value) {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -65,14 +74,19 @@ export default function AddDoctor() {
                         />
                     </div>
 
-                    <Field
+                    <SelectField
                         id="specialization"
                         label="Specialization"
                         value={form.specialization}
                         onChange={(e) => update("specialization", e.target.value)}
-                        placeholder="e.g. General Practitioner"
+                        disabled={loadingSpecializations}
                         required
-                    />
+                    >
+                        <option value="">Choose a specialization</option>
+                        {specializations.map((specialization) => (
+                            <option key={specialization} value={specialization}>{specialization}</option>
+                        ))}
+                    </SelectField>
 
                     <div className="field-row">
                         <Field
@@ -93,7 +107,7 @@ export default function AddDoctor() {
                         />
                     </div>
 
-                    <button className="btn-primary" type="submit" disabled={submitting}>
+                    <button className="btn-primary" type="submit" disabled={submitting || loadingSpecializations || !form.specialization}>
                         {submitting ? "Adding…" : "Add doctor"}
                     </button>
                 </form>

@@ -1,53 +1,65 @@
 package za.ac.cput.medisnyc.controller;
 
-/* AuthController.java
-   Module 1: Login API, Registration API, Forgot/Reset Password.
-   Author: Siphesihle
-*/
-
 import jakarta.validation.Valid;
-import za.ac.cput.medisnyc.dto.ApiResponse;
-import za.ac.cput.medisnyc.dto.AuthResponse;
-import za.ac.cput.medisnyc.dto.ForgotPasswordRequest;
-import za.ac.cput.medisnyc.dto.LoginRequest;
-import za.ac.cput.medisnyc.dto.RegisterRequest;
-import za.ac.cput.medisnyc.dto.ResetPasswordRequest;
-import za.ac.cput.medisnyc.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
+import za.ac.cput.medisnyc.domain.Patient;
+import za.ac.cput.medisnyc.domain.User;
+import za.ac.cput.medisnyc.service.PatientService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/patients")
 public class PatientController {
 
-    private final AuthService authService;
+    private final PatientService patientService;
 
-    @Autowired
-    public PatientController(AuthService authService) {
-        this.authService = authService;
+    public PatientController(PatientService patientService) {
+        this.patientService = patientService;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    @GetMapping
+    public ResponseEntity<List<Patient>> getAll() {
+        return ResponseEntity.ok(patientService.getAll());
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    @GetMapping("/{patientId}")
+    public ResponseEntity<Patient> getById(@PathVariable String patientId,
+                                           @AuthenticationPrincipal User user,
+                                           Authentication authentication) {
+        if (hasRole(authentication, "PATIENT")
+                && (user.getLinkedProfileId() == null || !user.getLinkedProfileId().equals(patientId))) {
+            throw new AccessDeniedException("Patients may only view their own record");
+        }
+        return ResponseEntity.ok(patientService.getById(patientId));
     }
 
-    @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        String token = authService.createPasswordResetToken(request.getEmail());
-        // Demo only: normally this token is emailed, never returned in the API response.
-        return ResponseEntity.ok(new ApiResponse(true, "Reset token generated: " + token));
+    @PostMapping
+    public ResponseEntity<Patient> create(@Valid @RequestBody CreatePatientRequest request) {
+        Patient created = patientService.create(request.firstName, request.lastName, request.email,
+                request.phoneNumber, request.dateOfBirth, request.allergies);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        authService.resetPassword(request.getToken(), request.getNewPassword());
-        return ResponseEntity.ok(new ApiResponse(true, "Password has been reset successfully"));
+    private boolean hasRole(Authentication authentication, String role) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(authority -> authority.equals("ROLE_" + role));
+    }
+
+    public static class CreatePatientRequest {
+        public String firstName;
+        public String lastName;
+        public String email;
+        public String phoneNumber;
+        public LocalDate dateOfBirth;
+        public List<String> allergies = List.of();
     }
 }

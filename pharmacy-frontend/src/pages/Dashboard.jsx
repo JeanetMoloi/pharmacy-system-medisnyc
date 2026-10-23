@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import "./Dashboard.css";
 
 const ROLE_COPY = {

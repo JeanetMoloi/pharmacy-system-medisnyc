@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { Field, Alert } from "../components/Field";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import { parseApiError } from "../utils/parseApiError";
 import "../components/Form.css";
 
@@ -15,6 +15,7 @@ export default function Login() {
 
   const [form, setForm] = useState({ username: location.state?.username || "", password: "" });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   function update(field, value) {
@@ -24,13 +25,16 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setSubmitting(true);
     try {
       await login(form);
       const redirectTo = location.state?.from || "/dashboard";
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(parseApiError(err).message);
+      const parsed = parseApiError(err);
+      setError(parsed.message);
+      setFieldErrors(parsed.fieldErrors);
     } finally {
       setSubmitting(false);
     }
@@ -58,8 +62,10 @@ export default function Login() {
           label="Username"
           type="text"
           autoComplete="username"
+          placeholder="Your username"
           value={form.username}
           onChange={(e) => update("username", e.target.value)}
+          error={fieldErrors.username}
           required
         />
 
@@ -68,13 +74,15 @@ export default function Login() {
           label="Password"
           type="password"
           autoComplete="current-password"
+          placeholder="Your password"
           value={form.password}
           onChange={(e) => update("password", e.target.value)}
+          error={fieldErrors.password}
           required
         />
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "-10px", marginBottom: "18px" }}>
-          <Link to="/forgot-password" style={{ fontSize: "13px", fontWeight: 600, textDecoration: "none" }}>
+          <Link className="auth-inline-link" to="/forgot-password">
             Forgot password?
           </Link>
         </div>
@@ -83,6 +91,11 @@ export default function Login() {
           {submitting ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      {import.meta.env.DEV && (
+        <p className="helper-text" style={{ marginTop: "14px", marginBottom: 0 }}>
+          Demo doctor login: firstname.lastname / password
+        </p>
+      )}
     </AuthLayout>
   );
 }

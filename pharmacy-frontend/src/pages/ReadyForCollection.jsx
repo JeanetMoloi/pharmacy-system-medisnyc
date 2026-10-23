@@ -15,7 +15,6 @@ export default function ReadyForCollection() {
     const [collectingId, setCollectingId] = useState(null);
 
     function load() {
-        setLoading(true);
         processingApi
             .getReadyForCollection()
             .then(setItems)

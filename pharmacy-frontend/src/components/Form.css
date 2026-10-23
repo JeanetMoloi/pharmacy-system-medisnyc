@@ -113,3 +113,13 @@
     margin-top: -8px;
     margin-bottom: 18px;
 }
+
+.auth-inline-link {
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-inline-link:hover {
+  text-decoration: underline;
+}

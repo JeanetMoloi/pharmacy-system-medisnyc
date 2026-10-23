@@ -3,11 +3,10 @@ import client from "./client";
 // Module 3 — Doctor Consultation & Prescription Module.
 // Maps onto ConsultationController (/api/medical-records, /api/consultations).
 
-export function createMedicalRecord({ patientId, doctorId, appointmentId, diagnosis, consultationNotes, treatmentPlan }) {
+export function createMedicalRecord({ patientId, appointmentId, diagnosis, consultationNotes, treatmentPlan }) {
     return client
         .post("/api/medical-records", {
             patientId,
-            doctorId,
             appointmentId,
             visitDate: new Date().toISOString().slice(0, 19),
             diagnosis,
@@ -25,10 +24,9 @@ export function getRecordsByDoctor(doctorId) {
     return client.get(`/api/medical-records/doctor/${doctorId}`).then((res) => res.data);
 }
 
-export function createPrescription({ patientId, doctorId, expiryDate, instructions, refillsAllowed, items }) {
+export function createPrescription({ patientId, expiryDate, instructions, refillsAllowed, items }) {
     const prescription = {
         patientId,
-        doctorId,
         dateIssued: new Date().toISOString().slice(0, 10),
         expiryDate,
         instructions,

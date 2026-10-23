@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "../components/AppShell";
 import { Alert } from "../components/Field";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import * as processingApi from "../api/prescriptionProcessingApi";
 import { parseApiError } from "../utils/parseApiError";
 import "./Appointments.css";
@@ -24,7 +24,7 @@ function TrackRail({ status }) {
             {STEPS.map((step, i) => (
                 <div
                     key={step.key}
-                    className={rx-track-step ${i < currentIndex ? "done" : ""} ${i === currentIndex ? "current" : ""}}
+                    className={`rx-track-step ${i < currentIndex ? "done" : ""} ${i === currentIndex ? "current" : ""}`}
                 >
                     <div className="rx-track-connector" />
                     <div className="rx-track-step-dot">{i < currentIndex ? "✓" : i + 1}</div>

@@ -3,7 +3,7 @@ import client from "./client";
 // Module 1 — Authentication & User Management
 // Maps 1:1 onto AuthController (/api/auth) and ProfileController (/api/profile).
 
-export function register({ username, email, password, firstName, lastName, role, linkedProfileId }) {
+export function register({ username, email, password, firstName, lastName, role, phoneNumber, dateOfBirth }) {
     return client
         .post("/api/auth/register", {
             username,
@@ -12,7 +12,8 @@ export function register({ username, email, password, firstName, lastName, role,
             firstName,
             lastName,
             role,
-            linkedProfileId: linkedProfileId || null,
+            phoneNumber,
+            dateOfBirth,
         })
         .then((res) => res.data);
 }
@@ -38,5 +39,5 @@ export function updateMyProfile({ firstName, lastName, email }) {
     if (firstName) params.append("firstName", firstName);
     if (lastName) params.append("lastName", lastName);
     if (email) params.append("email", email);
-    return client.put(/api/profile/me?${params.toString()}).then((res) => res.data);
+    return client.put(`/api/profile/me?${params.toString()}`).then((res) => res.data);
 }

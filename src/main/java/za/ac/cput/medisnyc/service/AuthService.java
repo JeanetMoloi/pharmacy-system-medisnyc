@@ -8,16 +8,19 @@ package za.ac.cput.medisnyc.service;
 import za.ac.cput.medisnyc.domain.PasswordResetToken;
 import za.ac.cput.medisnyc.domain.Role;
 import za.ac.cput.medisnyc.domain.User;
+import za.ac.cput.medisnyc.domain.Patient;
 import za.ac.cput.medisnyc.dto.AuthResponse;
 import za.ac.cput.medisnyc.dto.LoginRequest;
 import za.ac.cput.medisnyc.dto.RegisterRequest;
 import za.ac.cput.medisnyc.repository.jpa.PasswordResetTokenJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.RoleJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.UserJpaRepository;
+import za.ac.cput.medisnyc.repository.jpa.PatientJpaRepository;
 import za.ac.cput.medisnyc.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final PatientJpaRepository patientRepository;
+    private final AuditLogService auditLogService;
+    private final PasswordResetEmailService passwordResetEmailService;
 
     @Autowired
     public AuthService(UserJpaRepository userRepository,
@@ -44,17 +50,26 @@ public class AuthService {
                        PasswordResetTokenJpaRepository resetTokenRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
-                       JwtUtil jwtUtil) {
+                       JwtUtil jwtUtil,
+                       PatientJpaRepository patientRepository,
+                       AuditLogService auditLogService,
+                       PasswordResetEmailService passwordResetEmailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.resetTokenRepository = resetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
+        this.patientRepository = patientRepository;
+        this.auditLogService = auditLogService;
+        this.passwordResetEmailService = passwordResetEmailService;
     }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        if (!"PATIENT".equalsIgnoreCase(request.getRole())) {
+            throw new IllegalArgumentException("Only patient accounts can be self-registered");
+        }
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("Username is already taken");
         }
@@ -62,7 +77,21 @@ public class AuthService {
             throw new IllegalArgumentException("Email is already registered");
         }
 
-        String roleName = "ROLE_" + request.getRole().toUpperCase();
+        if (patientRepository.existsByEmailIgnoreCase(request.getEmail())) {
+            throw new IllegalArgumentException("Email is already registered to a patient");
+        }
+
+        Patient patient = new Patient.Builder()
+                .setMedicalId(za.ac.cput.medisnyc.util.Helper.generateId("PAT"))
+                .setFirstName(request.getFirstName())
+                .setLastName(request.getLastName())
+                .setEmail(request.getEmail())
+                .setPhoneNumber(request.getPhoneNumber())
+                .setDateOfBirth(request.getDateOfBirth())
+                .build();
+        Patient savedPatient = patientRepository.save(patient);
+
+        String roleName = "ROLE_PATIENT";
         Role role = roleRepository.findByName(roleName)
                 .orElseGet(() -> roleRepository.save(new Role.Builder().setName(roleName).build()));
 
@@ -72,15 +101,16 @@ public class AuthService {
                 .setPassword(passwordEncoder.encode(request.getPassword()))
                 .setFirstName(request.getFirstName())
                 .setLastName(request.getLastName())
-                .setLinkedProfileId(request.getLinkedProfileId())
+                .setLinkedProfileId(savedPatient.getMedicalId())
                 .setEnabled(true)
                 .addRole(role)
                 .build();
 
         User saved = userRepository.save(user);
+        auditLogService.log(saved.getUsername(), "REGISTER", saved.getUsername(), "Patient account registered");
         String token = jwtUtil.generateToken(saved);
 
-        List<String> roles = saved.getRoles().stream().map(Role::getName).collect(Collectors.toList());
+        List<String> roles = saved.getRoles().stream().map(Role::getName).sorted().collect(Collectors.toList());
         return new AuthResponse(token, saved.getUsername(), saved.getEmail(), roles);
     }
 
@@ -89,22 +119,27 @@ public class AuthService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
-        } catch (Exception ex) {
+        } catch (AuthenticationException ex) {
+            auditLogService.log(request.getUsername(), "LOGIN_FAILED", request.getUsername(),
+                    "Authentication failed");
             throw new BadCredentialsException("Invalid username or password");
         }
 
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
 
+        auditLogService.log(user.getUsername(), "LOGIN", user.getUsername(), "User signed in");
         String token = jwtUtil.generateToken(user);
-        List<String> roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toList());
+        List<String> roles = user.getRoles().stream().map(Role::getName).sorted().collect(Collectors.toList());
         return new AuthResponse(token, user.getUsername(), user.getEmail(), roles);
     }
 
     @Transactional
     public String createPasswordResetToken(String email) {
-        User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new IllegalArgumentException("No account found for that email"));
+        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
+        if (user == null) {
+            return null;
+        }
 
         String token = UUID.randomUUID().toString();
         PasswordResetToken resetToken = new PasswordResetToken.Builder()
@@ -114,8 +149,8 @@ public class AuthService {
                 .setUsed(false)
                 .build();
         resetTokenRepository.save(resetToken);
+        passwordResetEmailService.send(user.getEmail(), token);
 
-        // In production this would be emailed to the user, not returned directly.
         return token;
     }
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import AppShell from "../components/AppShell";
 import AdminNav from "../components/AdminNav";
 import { Alert } from "../components/Field";
-import * as adminApi from "../api/adminApi";
+import * as adminApi from "../api/adminApi.js";
 import { parseApiError } from "../utils/parseApiError";
 import "./Admin.css";
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell from "../components/AppShell";
 import AdminNav from "../components/AdminNav";
 import { Field, SelectField, Alert } from "../components/Field";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import * as orderApi from "../api/orderApi";
 import * as inventoryApi from "../api/inventoryApi";
 import { parseApiError } from "../utils/parseApiError";
@@ -34,7 +34,6 @@ export default function OrdersList() {
   const [submitting, setSubmitting] = useState(false);
 
   function loadOrders() {
-    setLoading(true);
     orderApi
       .getAllOrders()
       .then(setOrders)

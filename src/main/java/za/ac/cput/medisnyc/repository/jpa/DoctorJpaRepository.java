@@ -7,4 +7,5 @@ import java.util.List;
 public interface DoctorJpaRepository extends JpaRepository<Doctor, String> {
     List<Doctor> findBySpecializationIgnoreCase(String specialization);
     List<Doctor> findByLastNameIgnoreCase(String lastName);
+    boolean existsByEmailIgnoreCase(String email);
 }

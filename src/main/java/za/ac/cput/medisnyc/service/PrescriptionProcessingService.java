@@ -25,6 +25,7 @@ public class PrescriptionProcessingService {
     private final PrescriptionJpaRepository prescriptionRepository;
     private final PrescriptionCollectionJpaRepository collectionRepository;
     private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     // Defines which status can move to which next status.
     private static final Map<PrescriptionProcessingStatus, PrescriptionProcessingStatus> NEXT_STATUS = Map.of(
@@ -37,10 +38,12 @@ public class PrescriptionProcessingService {
     @Autowired
     public PrescriptionProcessingService(PrescriptionJpaRepository prescriptionRepository,
                                          PrescriptionCollectionJpaRepository collectionRepository,
-                                         NotificationService notificationService) {
+                                         NotificationService notificationService,
+                                         AuditLogService auditLogService) {
         this.prescriptionRepository = prescriptionRepository;
         this.collectionRepository = collectionRepository;
         this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
     }
 
     public List<Prescription> getQueue() {
@@ -54,6 +57,10 @@ public class PrescriptionProcessingService {
     // and follow each one through Pending -> ... -> Collected.
     public List<Prescription> getByPatient(String patientId) {
         return prescriptionRepository.findByPatientId(patientId);
+    }
+
+    public List<Prescription> getByDoctor(String doctorId) {
+        return prescriptionRepository.findByDoctorId(doctorId);
     }
 
     public List<Prescription> getReadyForCollection() {
@@ -89,6 +96,8 @@ public class PrescriptionProcessingService {
                 .build();
 
         Prescription saved = prescriptionRepository.save(updated);
+        auditLogService.log("SYSTEM", "ADVANCE_PRESCRIPTION", saved.getPrescriptionId(),
+                "Processing status changed from " + current + " to " + next);
 
         if (next == PrescriptionProcessingStatus.READY_FOR_COLLECTION) {
             notificationService.notify(saved.getPatientId(), saved.getPrescriptionId(),

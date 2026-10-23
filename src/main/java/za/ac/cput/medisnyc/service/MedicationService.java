@@ -7,6 +7,7 @@ package za.ac.cput.medisnyc.service;
 
 import za.ac.cput.medisnyc.domain.Medication;
 import za.ac.cput.medisnyc.repository.jpa.MedicationJpaRepository;
+import za.ac.cput.medisnyc.util.Helper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,10 @@ public class MedicationService {
 
     @Transactional
     public Medication addMedicine(Medication medication) {
+        if (medication.getMedicationId() == null || medication.getMedicationId().isBlank()) {
+            medication = new Medication.Builder().copy(medication)
+                    .setMedicationId(Helper.generateId("MED")).build();
+        }
         return medicationRepository.save(medication);
     }
 

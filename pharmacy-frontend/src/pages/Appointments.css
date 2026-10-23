@@ -283,6 +283,88 @@
     text-align: center;
     padding: 20px 0;
 }
+
+.booking-card {
+    max-width: 920px;
+}
+.booking-step {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+    padding-bottom: 8px;
+}
+.booking-step:last-child {
+    border-bottom: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.booking-step h2 {
+    font-size: 19px;
+    margin: 0 0 16px;
+}
+.booking-helper-note,
+.selected-doctor-note {
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin: -8px 0 16px;
+}
+.booking-emergency-note {
+    color: var(--error);
+    background: var(--error-soft);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 18px;
+    padding: 10px 12px;
+}
+.doctor-count {
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin: -8px 0 12px;
+}
+.doctor-picker {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-bottom: 24px;
+}
+.doctor-option-name,
+.doctor-option-spec {
+    display: block;
+}
+.doctor-option-radio {
+    accent-color: var(--pine);
+    cursor: pointer;
+}
+.doctor-empty {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 24px;
+    padding: 18px;
+}
+.show-all-doctors {
+    margin-top: 14px;
+}
+.selected-doctor-note {
+    color: var(--pine);
+    font-weight: 600;
+    margin: -8px 0 16px;
+}
+.doctor-directory-filter {
+    max-width: 360px;
+    margin-bottom: 20px;
+}
+
+@media (min-width: 900px) {
+    .doctor-picker {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .book-card {
+        padding: 20px 16px;
+    }
+}
 /* ---------- Appointment list (Appointments.jsx / TodaysAppointments.jsx) ---------- */
 .appts-header {
     display: flex;

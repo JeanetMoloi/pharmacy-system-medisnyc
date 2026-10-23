@@ -1,13 +1,13 @@
-Appointments.jsx
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import { Alert } from "../components/Field";
 import StatusBadge from "../components/StatusBadge";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import * as appointmentApi from "../api/appointmentApi";
 import * as doctorApi from "../api/doctorApi";
+import { formatPatientName, getPatientDetails } from "../utils/patientLookup";
 import { parseApiError } from "../utils/parseApiError";
 import "./Appointments.css";
 
@@ -39,20 +39,24 @@ export default function Appointments() {
 
     const [appointments, setAppointments] = useState([]);
     const [doctorNames, setDoctorNames] = useState({});
+    const [patientNames, setPatientNames] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [cancellingId, setCancellingId] = useState(null);
 
     useEffect(() => {
-        setLoading(true);
-        setError("");
         Promise.all([fetchForRole(role, id), doctorApi.getAllDoctors().catch(() => [])])
-            .then(([apts, doctors]) => {
+            .then(async ([apts, doctors]) => {
                 const names = {};
                 doctors.forEach((d) => {
                     names[d.doctorId] = `Dr. ${d.firstName} ${d.lastName}`;
                 });
                 setDoctorNames(names);
+                if (role !== "PATIENT") {
+                    const patients = await Promise.all([...new Set(apts.map((appointment) => appointment.patientId))]
+                        .map(async (patientId) => [patientId, await getPatientDetails(patientId)]));
+                    setPatientNames(Object.fromEntries(patients));
+                }
                 const sorted = [...apts].sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
                 setAppointments(sorted);
             })
@@ -124,10 +128,11 @@ export default function Appointments() {
                                 <div className="appts-row-id">{formatDateTime(a.appointmentDate)}</div>
                                 <div className="appts-row-parties">
                                     {role === "PATIENT" && <>Doctor: {doctorNames[a.doctorId] || a.doctorId}</>}
-                                    {role === "DOCTOR" && <>Patient: {a.patientId}</>}
+                                    {role === "DOCTOR" && <>Patient: {formatPatientName(patientNames[a.patientId], a.patientId)}</>}
                                     {isStaffView && (
                                         <>
-                                            Patient: {a.patientId} &nbsp;·&nbsp; Doctor: {doctorNames[a.doctorId] || a.doctorId}
+                                            Patient: {formatPatientName(patientNames[a.patientId], a.patientId)}
+                                            &nbsp;·&nbsp; Doctor: {doctorNames[a.doctorId] || a.doctorId}
                                         </>
                                     )}
                                 </div>

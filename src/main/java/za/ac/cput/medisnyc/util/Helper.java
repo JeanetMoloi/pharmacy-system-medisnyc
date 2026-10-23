@@ -24,7 +24,7 @@ public class Helper {
     public static boolean isValidPhone(String phoneNumber) {
         if (isNullOrEmpty(phoneNumber)) {
             return false;
-        }return phoneNumber.matches("^0[0-9]{9}$");
+        }return phoneNumber.matches("^(?:0[0-9]{9}|\\+[0-9]{10,15})$");
     }
 
     public static String capitalizeFirstLetter(String str) {

@@ -10,6 +10,7 @@ package za.ac.cput.medisnyc.controller;
 import za.ac.cput.medisnyc.domain.Doctor;
 import za.ac.cput.medisnyc.dto.CreateDoctorRequest;
 import za.ac.cput.medisnyc.service.DoctorService;
+import za.ac.cput.medisnyc.util.SpecializationCatalog;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,8 +31,16 @@ public class DoctorController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Doctor>> getAll() {
-        return ResponseEntity.ok(doctorService.getAll());
+    public ResponseEntity<List<Doctor>> getAll(
+            @RequestParam(required = false) String specialization) {
+        return ResponseEntity.ok(specialization == null || specialization.isBlank()
+                ? doctorService.getAll()
+                : doctorService.getBySpecialization(specialization));
+    }
+
+    @GetMapping("/specializations")
+    public ResponseEntity<List<String>> getSpecializations() {
+        return ResponseEntity.ok(SpecializationCatalog.getSpecializations());
     }
 
     @GetMapping("/{doctorId}")
@@ -49,5 +58,18 @@ public class DoctorController {
                 request.getEmail()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/{doctorId}")
+    public ResponseEntity<Doctor> update(@PathVariable String doctorId,
+                                         @Valid @RequestBody CreateDoctorRequest request) {
+        return ResponseEntity.ok(doctorService.update(doctorId, request.getFirstName(), request.getLastName(),
+                request.getSpecialization(), request.getPhoneNumber(), request.getEmail()));
+    }
+
+    @DeleteMapping("/{doctorId}")
+    public ResponseEntity<Void> delete(@PathVariable String doctorId) {
+        doctorService.delete(doctorId);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -100,12 +100,15 @@ public class OrderService {
             if (req.quantity() <= 0) {
                 throw new IllegalArgumentException("Quantity must be positive for " + req.medicationId());
             }
-            Inventory batch = inventoryRepository.findById(req.inventoryId())
+            Inventory batch = inventoryRepository.findByIdForUpdate(req.inventoryId())
                     .orElseThrow(() -> new IllegalArgumentException("Stock batch not found: " + req.inventoryId()));
-            if (batch.getStockLevel() < req.quantity()) {
+            if (!batch.getMedicationId().equals(req.medicationId())) {
+                throw new IllegalArgumentException("Medication does not match stock batch " + req.inventoryId());
+            }
+            if (!batch.canFulfillOrder(req.quantity())) {
                 throw new IllegalArgumentException(
                         "Not enough stock for " + batch.getMedicationId() + " (have " + batch.getStockLevel()
-                                + ", need " + req.quantity() + ")");
+                                + ", need " + req.quantity() + ") or stock is expired");
             }
 
             OrderItem item = new OrderItem.Builder()
@@ -152,6 +155,38 @@ public class OrderService {
         Order existing = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
 
+        OrderStatus current = existing.getDispensingStatus();
+        boolean validTransition = switch (current) {
+            case PENDING -> newStatus == OrderStatus.PROCESSING || newStatus == OrderStatus.CANCELLED;
+            case PROCESSING -> newStatus == OrderStatus.DISPENSED || newStatus == OrderStatus.CANCELLED;
+            case DISPENSED -> newStatus == OrderStatus.COMPLETED;
+            case CANCELLED, COMPLETED -> false;
+        };
+        if (!validTransition) {
+            throw new IllegalStateException("Order cannot change from " + current + " to " + newStatus);
+        }
+
+        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+        if (newStatus == OrderStatus.CANCELLED) {
+            for (OrderItem item : items) {
+                Inventory batch = inventoryRepository.findByIdForUpdate(item.getInventoryId())
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Stock batch no longer exists: " + item.getInventoryId()));
+                Inventory restocked = new Inventory.Builder()
+                        .setInventoryId(batch.getInventoryId())
+                        .setMedicationId(batch.getMedicationId())
+                        .setStockLevel(batch.getStockLevel() + item.getQuantity())
+                        .setExpiryDate(batch.getExpiryDate())
+                        .setBatchNumber(batch.getBatchNumber())
+                        .setSupplier(batch.getSupplier())
+                        .setUnitPrice(batch.getUnitPrice())
+                        .setReceivedDate(batch.getReceivedDate())
+                        .setReorderLevel(batch.getReorderLevel())
+                        .build();
+                inventoryRepository.save(restocked);
+            }
+        }
+
         Order updated = new Order.Builder()
                 .setOrderId(existing.getOrderId())
                 .setPatientId(existing.getPatientId())
@@ -161,6 +196,7 @@ public class OrderService {
                 .setTotalAmount(existing.getTotalAmount())
                 .setPharmacistId(existing.getPharmacistId())
                 .setNotes(existing.getNotes())
+                .setItems(items)
                 .build();
         Order saved = orderRepository.save(updated);
 

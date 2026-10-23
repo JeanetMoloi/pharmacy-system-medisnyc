@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { Field, Alert } from "../components/Field";
 import { forgotPassword } from "../api/authApi";
@@ -7,9 +7,9 @@ import { parseApiError } from "../utils/parseApiError";
 import "../components/Form.css";
 
 export default function ForgotPassword() {
-    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
+    const [submitted, setSubmitted] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     async function handleSubmit(e) {
@@ -17,12 +17,8 @@ export default function ForgotPassword() {
         setError("");
         setSubmitting(true);
         try {
-            const res = await forgotPassword({ email });
-            // Demo backend returns the token directly in the message instead of emailing it.
-            // We hand it straight to the reset page so the flow is testable end to end.
-            const match = res.message?.match(/Reset token generated: (.+)$/);
-            const token = match ? match[1] : "";
-            navigate("/reset-password", { state: { email, token } });
+            await forgotPassword({ email });
+            setSubmitted(true);
         } catch (err) {
             setError(parseApiError(err).message);
         } finally {
@@ -34,7 +30,7 @@ export default function ForgotPassword() {
         <AuthLayout
             eyebrow="Account access"
             title="Forgot your password?"
-            subtitle="Enter the email on your account and we'll generate a reset token."
+            subtitle="Enter your account email and, if it matches an account, reset instructions will be sent."
             footer={
                 <>
                     Remembered it after all? <Link to="/login">Back to sign in</Link>
@@ -43,6 +39,7 @@ export default function ForgotPassword() {
         >
             <form onSubmit={handleSubmit} noValidate>
                 <Alert type="error">{error}</Alert>
+                {submitted && <p role="status">If an account exists for that email, password reset instructions will be sent.</p>}
 
                 <Field
                     id="email"

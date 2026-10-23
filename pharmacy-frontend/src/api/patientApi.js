@@ -1,5 +1,3 @@
-frontend>api
-patientApi.js
 import client from "./client";
 
 export function getAllPatients() {
@@ -7,11 +5,11 @@ export function getAllPatients() {
 }
 
 export function getPatientById(medicalId) {
-  return client.get(/api/patients/${medicalId}).then((res) => res.data);
+  return client.get(`/api/patients/${medicalId}`).then((res) => res.data);
 }
 
 export function createPatient({ firstName, lastName, email, phoneNumber, dateOfBirth, allergies }) {
   return client
-    .post("/api/patients", { firstName, lastName, email, phoneNumber, dateOfBirth, allergies })
-    .then((res) => res.data);
+      .post("/api/patients", { firstName, lastName, email, phoneNumber, dateOfBirth, allergies })
+      .then((res) => res.data);
 }

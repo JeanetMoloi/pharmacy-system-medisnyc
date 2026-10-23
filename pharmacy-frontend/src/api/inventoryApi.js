@@ -1,4 +1,3 @@
-inventoryApi.js
 import client from "./client";
 
 

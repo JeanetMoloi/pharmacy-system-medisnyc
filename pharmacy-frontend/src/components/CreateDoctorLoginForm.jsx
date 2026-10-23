@@ -1,9 +1,7 @@
 
-components
-CreateDoctorLoginForm.jsx
 import { useState } from "react";
 import { Field, Alert } from "./Field";
-import * as adminApi from "../api/adminApi";
+import * as adminApi from "../api/adminApi.js";
 import { parseApiError } from "../utils/parseApiError";
 
 export default function CreateDoctorLoginForm({ doctor, onDone, onCancel }) {

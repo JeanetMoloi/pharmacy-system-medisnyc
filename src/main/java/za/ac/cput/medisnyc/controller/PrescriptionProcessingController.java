@@ -6,7 +6,11 @@ package za.ac.cput.medisnyc.controller;
 */
 
 import za.ac.cput.medisnyc.domain.Prescription;
+import za.ac.cput.medisnyc.domain.User;
 import za.ac.cput.medisnyc.service.PrescriptionProcessingService;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,8 +35,27 @@ public class PrescriptionProcessingController {
 
     // Module 5: Prescription Tracking page - a patient looking up their own prescriptions.
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<Prescription>> getByPatient(@PathVariable String patientId) {
+    public ResponseEntity<List<Prescription>> getByPatient(@PathVariable String patientId,
+                                                           @AuthenticationPrincipal User user,
+                                                           Authentication authentication) {
+        boolean patient = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_PATIENT"));
+        if (patient && !patientId.equals(user.getLinkedProfileId())) {
+            throw new AccessDeniedException("Patients may only view their own prescriptions");
+        }
         return ResponseEntity.ok(processingService.getByPatient(patientId));
+    }
+
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<Prescription>> getByDoctor(@PathVariable String doctorId,
+                                                          @AuthenticationPrincipal User user,
+                                                          Authentication authentication) {
+        boolean doctor = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_DOCTOR"));
+        if (doctor && !doctorId.equals(user.getLinkedProfileId())) {
+            throw new AccessDeniedException("Doctors may only view their own prescriptions");
+        }
+        return ResponseEntity.ok(processingService.getByDoctor(doctorId));
     }
 
     @GetMapping("/ready-for-collection")
@@ -41,8 +64,21 @@ public class PrescriptionProcessingController {
     }
 
     @GetMapping("/{prescriptionId}")
-    public ResponseEntity<Prescription> track(@PathVariable String prescriptionId) {
-        return ResponseEntity.ok(processingService.getById(prescriptionId));
+    public ResponseEntity<Prescription> track(@PathVariable String prescriptionId,
+                                              @AuthenticationPrincipal User user,
+                                              Authentication authentication) {
+        Prescription prescription = processingService.getById(prescriptionId);
+        boolean patient = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_PATIENT"));
+        boolean doctor = authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_DOCTOR"));
+        if (patient && !prescription.getPatientId().equals(user.getLinkedProfileId())) {
+            throw new AccessDeniedException("Patients may only view their own prescriptions");
+        }
+        if (doctor && !prescription.getDoctorId().equals(user.getLinkedProfileId())) {
+            throw new AccessDeniedException("Doctors may only view their own prescriptions");
+        }
+        return ResponseEntity.ok(prescription);
     }
 
     // Advances Pending -> Received -> Preparing -> Ready for Collection -> Collected,

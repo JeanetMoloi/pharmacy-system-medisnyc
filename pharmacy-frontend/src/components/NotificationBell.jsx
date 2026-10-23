@@ -10,10 +10,10 @@ function timeAgo(isoString) {
     const diffMs = Date.now() - new Date(isoString).getTime();
     const mins = Math.floor(diffMs / 60000);
     if (mins < 1) return "just now";
-    if (mins < 60) return ${mins}m ago;
+    if (mins < 60) return `${mins}m ago`;
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return ${hours}h ago;
-    return ${Math.floor(hours / 24)}d ago;
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
 }
 
 export default function NotificationBell({ patientId }) {
@@ -82,7 +82,7 @@ export default function NotificationBell({ patientId }) {
                         notifications.map((n) => (
                             <div
                                 key={n.notificationId}
-                                className={bell-item ${!n.read ? "unread" : ""}}
+                                className={`bell-item ${!n.read ? "unread" : ""}`}
                                 onClick={() => handleItemClick(n)}
                             >
                                 <div className="bell-item-msg">{n.message}</div>

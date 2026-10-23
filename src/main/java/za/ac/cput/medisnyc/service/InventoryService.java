@@ -7,6 +7,7 @@ package za.ac.cput.medisnyc.service;
 
 import za.ac.cput.medisnyc.domain.Inventory;
 import za.ac.cput.medisnyc.repository.jpa.InventoryJpaRepository;
+import za.ac.cput.medisnyc.util.Helper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,19 @@ public class InventoryService {
 
     @Transactional
     public Inventory receiveStock(Inventory inventory) {
+        if (inventory.getInventoryId() == null || inventory.getInventoryId().isBlank()) {
+            inventory = new Inventory.Builder()
+                    .setInventoryId(Helper.generateId("INV"))
+                    .setMedicationId(inventory.getMedicationId())
+                    .setStockLevel(inventory.getStockLevel())
+                    .setExpiryDate(inventory.getExpiryDate())
+                    .setBatchNumber(inventory.getBatchNumber())
+                    .setSupplier(inventory.getSupplier())
+                    .setUnitPrice(inventory.getUnitPrice())
+                    .setReceivedDate(inventory.getReceivedDate())
+                    .setReorderLevel(inventory.getReorderLevel())
+                    .build();
+        }
         return inventoryRepository.save(inventory);
     }
 

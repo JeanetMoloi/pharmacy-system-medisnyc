@@ -1,16 +1,35 @@
-# React + Vite
+# MediSync frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The React application uses React Router for navigation and Axios for API calls.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Install dependencies and start the Vite server:
 
-## React Compiler
+```powershell
+Set-Location pharmacy-frontend
+npm ci
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+`pharmacy-frontend/.env` sets `VITE_API_URL` to `http://localhost:8090`, the
+backend's configured port.
 
-## Expanding the Oxlint configuration
+## Backend configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+The backend requires a fresh, private JWT signing key supplied through
+`JWT_SECRET`; do not put the key in source control. In PowerShell, generate a
+32-byte key for the backend process:
+
+```powershell
+$env:JWT_SECRET = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+```
+
+Password reset messages require SMTP configuration through `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `SMTP_FROM`. Set
+`FRONTEND_URL` to the public frontend origin when deploying so reset links point
+to the correct site.
+
+The database-backed Spring context test is opt-in with
+`RUN_DB_INTEGRATION_TESTS=true`; it requires a configured MySQL database and
+JWT key.

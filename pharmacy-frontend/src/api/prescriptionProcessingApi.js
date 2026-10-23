@@ -12,17 +12,17 @@ export function getReadyForCollection() {
 }
 
 export function getByPatient(patientId) {
-    return client.get(/api/prescription-processing/patient/${patientId}).then((res) => res.data);
+    return client.get(`/api/prescription-processing/patient/${patientId}`).then((res) => res.data);
 }
 
 export function getByDoctor(doctorId) {
-    return client.get(/api/prescription-processing/doctor/${doctorId}).then((res) => res.data);
+    return client.get(`/api/prescription-processing/doctor/${doctorId}`).then((res) => res.data);
 }
 
 export function trackPrescription(prescriptionId) {
-    return client.get(/api/prescription-processing/${prescriptionId}).then((res) => res.data);
+    return client.get(`/api/prescription-processing/${prescriptionId}`).then((res) => res.data);
 }
 
 export function advanceStatus(prescriptionId) {
-    return client.put(/api/prescription-processing/${prescriptionId}/advance).then((res) => res.data);
+    return client.put(`/api/prescription-processing/${prescriptionId}/advance`).then((res) => res.data);
 }

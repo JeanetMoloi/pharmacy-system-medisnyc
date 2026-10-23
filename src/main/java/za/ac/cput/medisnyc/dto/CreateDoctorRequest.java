@@ -6,6 +6,8 @@ package za.ac.cput.medisnyc.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.AssertTrue;
+import za.ac.cput.medisnyc.util.SpecializationCatalog;
 
 public class CreateDoctorRequest {
     @NotBlank
@@ -29,6 +31,10 @@ public class CreateDoctorRequest {
     public void setLastName(String lastName) { this.lastName = lastName; }
     public String getSpecialization() { return specialization; }
     public void setSpecialization(String specialization) { this.specialization = specialization; }
+    @AssertTrue(message = "Please choose a valid specialization")
+    public boolean isSpecializationValid() {
+        return SpecializationCatalog.canonicalize(specialization).isPresent();
+    }
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public String getEmail() { return email; }

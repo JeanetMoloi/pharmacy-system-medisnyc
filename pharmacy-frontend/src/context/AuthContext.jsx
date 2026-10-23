@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { AuthContext } from "./AuthState";
 import * as authApi from "../api/authApi";
-
-const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(() => {
@@ -75,8 +74,8 @@ export function AuthProvider({ children }) {
 
     function primaryRole() {
         if (!user || !user.roles || user.roles.length === 0) return null;
-        // Roles come back as e.g. "ROLE_PATIENT" — strip the prefix for display/routing.
-        return user.roles[0].replace(/^ROLE_/, "");
+        const roles = user.roles.map((role) => role.replace(/^ROLE_/, ""));
+        return ["ADMIN", "DOCTOR", "PHARMACIST", "PATIENT"].find((role) => roles.includes(role)) || null;
     }
 
     // Appointment.patientId / .doctorId aren't foreign-keyed to anything, so for this
@@ -89,10 +88,4 @@ export function AuthProvider({ children }) {
     const value = { user, ready, login, register, logout, primaryRole, profileId, refreshProfile };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-    const ctx = useContext(AuthContext);
-    if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
-    return ctx;
 }

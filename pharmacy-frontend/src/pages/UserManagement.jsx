@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import AppShell from "../components/AppShell";
 import AdminNav from "../components/AdminNav";
 import { Alert, SelectField } from "../components/Field";
-import CreateDoctorLoginForm from "../components/CreateDoctorLoginForm";
-import * as adminApi from "../api/adminApi";
+import CreateDoctorLoginForm from "../components/CreateDoctorLoginForm.jsx";
+import * as adminApi from "../api/adminApi.js";
 import * as doctorApi from "../api/doctorApi";
 import { parseApiError } from "../utils/parseApiError";
 import "./Admin.css";
@@ -42,7 +42,6 @@ export default function UserManagement() {
   const selectedDoctor = doctors.find((d) => d.doctorId === selectedDoctorId);
 
   function load() {
-    setLoading(true);
     adminApi
       .getAllUsers()
       .then(setUsers)

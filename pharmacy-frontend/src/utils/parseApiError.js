@@ -3,7 +3,7 @@
 //   { fieldName: "error message", ... }               -> @Valid MethodArgumentNotValidException
 export function parseApiError(error) {
     if (!error.response) {
-        return { message: "Can't reach the server. Is the backend running on localhost:8080?", fieldErrors: {} };
+        return { message: "Can't reach the server. Is the backend running on localhost:8090?", fieldErrors: {} };
     }
 
     const data = error.response.data;

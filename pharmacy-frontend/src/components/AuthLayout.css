@@ -199,6 +199,7 @@ AuthLayout.css
 
 .auth-title {
     font-size: 25px;
+    margin: 0 0 12px;
 }
 
 .auth-subtitle {
@@ -218,12 +219,23 @@ AuthLayout.css
     text-align: center;
 }
 
-.auth-footer a {
+.auth-footer a,
+.auth-footer a:visited {
+    color: var(--pine);
     font-weight: 600;
     text-decoration: none;
 }
 
 .auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.auth-form-area a,
+.auth-form-area a:visited {
+    color: var(--pine);
+}
+
+.auth-form-area a:hover {
     text-decoration: underline;
 }
 
@@ -236,5 +248,14 @@ AuthLayout.css
     }
     .auth-flow {
         margin: 28px 0;
+    }
+    .auth-main {
+        padding: 24px 16px;
+    }
+    .auth-card {
+        max-width: 100%;
+    }
+    .auth-card-body {
+        padding: 28px 20px 24px;
     }
 }

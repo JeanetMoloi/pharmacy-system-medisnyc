@@ -1,25 +1,54 @@
 import client from "./client";
 
-export function getAllDoctors() {
-    return client.get("/api/doctors").then((res) => res.data);
+// Module 6 — Reports & Administration. Maps onto AdminController (/api/admin) and
+// ReportController (/api/reports).
+
+export function getAllUsers() {
+    return client.get("/api/admin/users").then((res) => res.data);
 }
 
-export function getDoctorById(doctorId) {
-    return client.get(`/api/doctors/${doctorId}`).then((res) => res.data);
+export function setUserEnabled(userId, enabled) {
+    return client.put(`/api/admin/users/${userId}/enabled`, null, { params: { enabled } }).then((res) => res.data);
 }
 
-export function createDoctor({ firstName, lastName, specialization, phoneNumber, email }) {
+export function assignRole(userId, role) {
+    return client.put(`/api/admin/users/${userId}/roles`, null, { params: { role } }).then((res) => res.data);
+}
+
+export function setLinkedProfileId(userId, linkedProfileId) {
     return client
-        .post("/api/doctors", { firstName, lastName, specialization, phoneNumber, email })
+        .put(`/api/admin/users/${userId}/linked-profile`, null, { params: { linkedProfileId } })
         .then((res) => res.data);
 }
 
-export function updateDoctor(doctorId, { firstName, lastName, specialization, phoneNumber, email }) {
+export function linkNewPatientProfile(userId, { phoneNumber, dateOfBirth }) {
     return client
-        .put(`/api/doctors/${doctorId}`, { firstName, lastName, specialization, phoneNumber, email })
+        .put(`/api/admin/users/${userId}/link-patient`, { phoneNumber, dateOfBirth })
         .then((res) => res.data);
 }
 
-export function deleteDoctor(doctorId) {
-    return client.delete(`/api/doctors/${doctorId}`);
+export function linkExistingDoctorProfile(userId, doctorId) {
+    return client
+        .put(`/api/admin/users/${userId}/link-doctor`, null, { params: { doctorId } })
+        .then((res) => res.data);
+}
+
+export function deleteUser(userId) {
+    return client.delete(`/api/admin/users/${userId}`);
+}
+
+export function createDoctorLogin({ doctorId, username, email, password }) {
+    return client.post("/api/admin/users/doctor-login", { doctorId, username, email, password }).then((res) => res.data);
+}
+
+export function getAuditLogs() {
+    return client.get("/api/admin/audit-logs").then((res) => res.data);
+}
+
+export function getDashboardStatistics() {
+    return client.get("/api/reports/dashboard-statistics").then((res) => res.data);
+}
+
+export function getRevenueReport() {
+    return client.get("/api/reports/revenue").then((res) => res.data);
 }

@@ -49,7 +49,6 @@ export default function InventoryDashboard() {
   const [error, setError] = useState("");
 
   function loadAll() {
-    setLoading(true);
     Promise.all([medicationApi.getAllMedications(), inventoryApi.getAllInventory(), inventoryApi.getLowStockAlerts()])
       .then(([meds, inv, low]) => {
         setMedications(meds);

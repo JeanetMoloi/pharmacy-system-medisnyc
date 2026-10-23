@@ -1,4 +1,3 @@
-appointmentApi.js
 import client from "./client";
 
 // Module 2 — Patient & Appointment Module.

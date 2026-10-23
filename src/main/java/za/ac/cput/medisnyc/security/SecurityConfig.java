@@ -86,6 +86,20 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/reports/**").hasAnyRole("ADMIN", "PHARMACIST")
 
+                        // Patient records and orders are restricted by both role and owner checks.
+                        .requestMatchers(HttpMethod.GET, "/api/patients").hasAnyRole("ADMIN", "DOCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/patients/**")
+                        .hasAnyRole("ADMIN", "DOCTOR", "PHARMACIST", "PATIENT")
+                        .requestMatchers(HttpMethod.POST, "/api/patients").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/orders/patient/**")
+                        .hasAnyRole("ADMIN", "PHARMACIST", "PATIENT")
+                        .requestMatchers(HttpMethod.GET, "/api/orders").hasAnyRole("ADMIN", "PHARMACIST")
+                        .requestMatchers(HttpMethod.GET, "/api/orders/**")
+                        .hasAnyRole("ADMIN", "PHARMACIST", "PATIENT")
+                        .requestMatchers(HttpMethod.POST, "/api/orders")
+                        .hasAnyRole("ADMIN", "PHARMACIST")
+                        .requestMatchers(HttpMethod.PUT, "/api/orders/**").hasAnyRole("ADMIN", "PHARMACIST")
+
                         // Module 4: Pharmacy inventory (write ops stay pharmacist/admin only;
                         // doctors get read-only access to the medication list so they can
                         // pick medications when writing a prescription in Module 3)
@@ -104,6 +118,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/prescription-processing/queue",
                                 "/api/prescription-processing/ready-for-collection")
                         .hasAnyRole("ADMIN", "PHARMACIST")
+                        .requestMatchers(HttpMethod.GET, "/api/prescription-processing/doctor/**")
+                        .hasAnyRole("ADMIN", "DOCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/prescription-processing/patient/**")
+                        .hasAnyRole("ADMIN", "PATIENT")
                         .requestMatchers(HttpMethod.GET, "/api/prescription-processing/**")
                         .hasAnyRole("ADMIN", "PHARMACIST", "DOCTOR", "PATIENT")
                         .requestMatchers("/api/prescription-processing/**")
@@ -113,8 +131,22 @@ public class SecurityConfig {
                         // (needed to pick a doctor when booking); only admins can add one.
                         .requestMatchers(HttpMethod.GET, "/api/doctors/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/doctors").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/doctors/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/doctors/**").hasRole("ADMIN")
 
                         // Module 2: Appointments - patients, doctors and admins
+                        .requestMatchers(HttpMethod.GET, "/api/appointments")
+                        .hasAnyRole("ADMIN", "PHARMACIST")
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/doctor/**")
+                        .hasAnyRole("ADMIN", "DOCTOR")
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/patient/**")
+                        .hasAnyRole("ADMIN", "PATIENT")
+                        .requestMatchers(HttpMethod.POST, "/api/appointments")
+                        .hasAnyRole("ADMIN", "PATIENT")
+                        .requestMatchers(HttpMethod.PUT, "/api/appointments/*/cancel")
+                        .hasAnyRole("ADMIN", "PATIENT")
+                        .requestMatchers(HttpMethod.PUT, "/api/appointments/*/status")
+                        .hasAnyRole("ADMIN", "DOCTOR")
                         .requestMatchers("/api/appointments/**")
                         .hasAnyRole("ADMIN", "DOCTOR", "PATIENT")
 

@@ -10,6 +10,7 @@ import za.ac.cput.medisnyc.domain.AppointmentStatus;
 import za.ac.cput.medisnyc.dto.CreateAppointmentRequest;
 import za.ac.cput.medisnyc.repository.jpa.AppointmentJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.DoctorJpaRepository;
+import za.ac.cput.medisnyc.repository.jpa.PatientJpaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,17 +23,23 @@ public class AppointmentService {
 
     private final AppointmentJpaRepository appointmentRepository;
     private final DoctorJpaRepository doctorRepository;
+    private final PatientJpaRepository patientRepository;
 
     @Autowired
-    public AppointmentService(AppointmentJpaRepository appointmentRepository, DoctorJpaRepository doctorRepository) {
+    public AppointmentService(AppointmentJpaRepository appointmentRepository, DoctorJpaRepository doctorRepository,
+                              PatientJpaRepository patientRepository) {
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
+        this.patientRepository = patientRepository;
     }
 
     @Transactional
     public Appointment bookAppointment(CreateAppointmentRequest request) {
         if (!doctorRepository.existsById(request.getDoctorId())) {
             throw new IllegalArgumentException("Doctor not found: " + request.getDoctorId());
+        }
+        if (!patientRepository.existsById(request.getPatientId())) {
+            throw new IllegalArgumentException("Patient not found: " + request.getPatientId());
         }
 
         Appointment appointment = new Appointment.Builder()
@@ -68,6 +75,14 @@ public class AppointmentService {
     @Transactional
     public Appointment updateStatus(String appointmentId, AppointmentStatus status) {
         Appointment existing = getById(appointmentId);
+        boolean validTransition = switch (existing.getStatus()) {
+            case SCHEDULED -> status == AppointmentStatus.CONFIRMED || status == AppointmentStatus.CANCELLED;
+            case CONFIRMED -> status == AppointmentStatus.COMPLETED || status == AppointmentStatus.CANCELLED;
+            case CANCELLED, COMPLETED -> false;
+        };
+        if (!validTransition) {
+            throw new IllegalStateException("Appointment cannot change from " + existing.getStatus() + " to " + status);
+        }
         Appointment updated = new Appointment.Builder().copy(existing).setStatus(status).build();
         return appointmentRepository.save(updated);
     }

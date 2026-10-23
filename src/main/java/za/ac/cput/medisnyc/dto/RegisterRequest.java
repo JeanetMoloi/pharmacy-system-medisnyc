@@ -3,6 +3,9 @@ package za.ac.cput.medisnyc.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDate;
 
 public class RegisterRequest {
     @NotBlank
@@ -20,12 +23,15 @@ public class RegisterRequest {
     @NotBlank
     private String lastName;
 
-    // e.g. "PATIENT", "DOCTOR", "PHARMACIST", "ADMIN"
+    // Kept for API compatibility; public registration accepts PATIENT only.
     @NotBlank
     private String role;
 
-    // Optional: links to an existing Patient.medicalId or Doctor.doctorId
-    private String linkedProfileId;
+    @NotBlank
+    private String phoneNumber;
+
+    @NotNull
+    private LocalDate dateOfBirth;
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -39,6 +45,8 @@ public class RegisterRequest {
     public void setLastName(String lastName) { this.lastName = lastName; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
-    public String getLinkedProfileId() { return linkedProfileId; }
-    public void setLinkedProfileId(String linkedProfileId) { this.linkedProfileId = linkedProfileId; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
 }
