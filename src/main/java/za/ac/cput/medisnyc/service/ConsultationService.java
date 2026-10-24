@@ -6,8 +6,11 @@ package za.ac.cput.medisnyc.service;
 
 import za.ac.cput.medisnyc.domain.MedicalRecord;
 import za.ac.cput.medisnyc.domain.Prescription;
+import za.ac.cput.medisnyc.domain.PrescriptionProcessingStatus;
 import za.ac.cput.medisnyc.domain.PrescriptionItem;
+import za.ac.cput.medisnyc.domain.PrescriptionStatus;
 import za.ac.cput.medisnyc.repository.jpa.MedicalRecordJpaRepository;
+import za.ac.cput.medisnyc.repository.jpa.PatientJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.PrescriptionItemJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.PrescriptionJpaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,26 +26,25 @@ public class ConsultationService {
     private final MedicalRecordJpaRepository medicalRecordRepository;
     private final PrescriptionJpaRepository prescriptionRepository;
     private final PrescriptionItemJpaRepository prescriptionItemRepository;
+    private final PatientJpaRepository patientRepository;
 
     @Autowired
     public ConsultationService(MedicalRecordJpaRepository medicalRecordRepository,
                                PrescriptionJpaRepository prescriptionRepository,
-                               PrescriptionItemJpaRepository prescriptionItemRepository) {
+                               PrescriptionItemJpaRepository prescriptionItemRepository,
+                               PatientJpaRepository patientRepository) {
         this.medicalRecordRepository = medicalRecordRepository;
         this.prescriptionRepository = prescriptionRepository;
         this.prescriptionItemRepository = prescriptionItemRepository;
+        this.patientRepository = patientRepository;
     }
 
     // Today's appointments handled by AppointmentService.getByDoctor + date filter in controller.
 
     @Transactional
     public MedicalRecord createMedicalRecord(MedicalRecord record) {
-        MedicalRecord toSave = record.getRecordId() == null || record.getRecordId().isBlank()
-                ? new MedicalRecord.Builder().copy(record)
-                  .setRecordId("MR-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                  .build()
-                : record;
-        return medicalRecordRepository.save(toSave);
+        validatePatient(record.getPatientId());
+        return medicalRecordRepository.save(record);
     }
 
     public List<MedicalRecord> getRecordsByPatient(String patientId) {
@@ -55,20 +57,19 @@ public class ConsultationService {
 
     @Transactional
     public Prescription createPrescription(Prescription prescription, List<PrescriptionItem> items) {
-        Prescription toSave = prescription.getPrescriptionId() == null || prescription.getPrescriptionId().isBlank()
-                ? new Prescription.Builder()
-                  .setPrescriptionId("RX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                  .setPatientId(prescription.getPatientId())
-                  .setDoctorId(prescription.getDoctorId())
-                  .setDateIssued(prescription.getDateIssued())
-                  .setExpiryDate(prescription.getExpiryDate())
-                  .setInstructions(prescription.getInstructions())
-                  .setRefillsAllowed(prescription.getRefillsAllowed())
-                  .setRefillsUsed(prescription.getRefillsUsed())
-                  .setStatus(prescription.getStatus())
-                  .setProcessingStatus(prescription.getProcessingStatus())
-                  .build()
-                : prescription;
+        validatePatient(prescription.getPatientId());
+        Prescription toSave = new Prescription.Builder()
+                .setPrescriptionId("RX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .setPatientId(prescription.getPatientId())
+                .setDoctorId(prescription.getDoctorId())
+                .setDateIssued(prescription.getDateIssued())
+                .setExpiryDate(prescription.getExpiryDate())
+                .setInstructions(prescription.getInstructions())
+                .setRefillsAllowed(prescription.getRefillsAllowed())
+                .setRefillsUsed(0)
+                .setStatus(PrescriptionStatus.ACTIVE)
+                .setProcessingStatus(PrescriptionProcessingStatus.PENDING)
+                .build();
 
         Prescription saved = prescriptionRepository.save(toSave);
 
@@ -92,5 +93,14 @@ public class ConsultationService {
 
     public List<PrescriptionItem> getItemsForPrescription(String prescriptionId) {
         return prescriptionItemRepository.findByPrescriptionId(prescriptionId);
+    }
+
+    private void validatePatient(String patientId) {
+        if (patientId == null || patientId.isBlank()) {
+            throw new IllegalArgumentException("Patient ID is required");
+        }
+        if (!patientRepository.existsById(patientId)) {
+            throw new IllegalArgumentException("Patient not found: " + patientId);
+        }
     }
 }

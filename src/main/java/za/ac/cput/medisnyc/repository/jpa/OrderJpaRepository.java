@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface OrderJpaRepository extends JpaRepository<Order, String> {
     List<Order> findByPatientId(String patientId);
+    java.util.Optional<Order> findFirstByPrescriptionId(String prescriptionId);
     List<Order> findByDispensingStatus(OrderStatus status);
+    boolean existsByPatientId(String patientId);
 }

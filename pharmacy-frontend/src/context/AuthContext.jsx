@@ -61,9 +61,7 @@ export function AuthProvider({ children }) {
     }
 
     async function register(details) {
-        const res = await authApi.register(details);
-        applySession(res);
-        return refreshProfile();
+        return authApi.register(details);
     }
 
     function logout() {

@@ -20,6 +20,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 public class ConsultationController {
@@ -36,6 +37,9 @@ public class ConsultationController {
     @PostMapping("/api/medical-records")
     public ResponseEntity<MedicalRecord> createMedicalRecord(@RequestBody MedicalRecord record,
                                                               @AuthenticationPrincipal User user) {
+        if (record == null) {
+            throw new IllegalArgumentException("Medical record body is required");
+        }
         String doctorId = getAuthenticatedDoctorId(user, record.getDoctorId());
         if (record.getAppointmentId() != null && !record.getAppointmentId().isBlank()) {
             Appointment appointment = appointmentService.getById(record.getAppointmentId());
@@ -46,6 +50,7 @@ public class ConsultationController {
         }
         MedicalRecord authenticatedRecord = new MedicalRecord.Builder()
                 .copy(record)
+                .setRecordId("MR-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .setDoctorId(doctorId)
                 .build();
         return ResponseEntity.ok(consultationService.createMedicalRecord(authenticatedRecord));
@@ -67,21 +72,23 @@ public class ConsultationController {
     }
 
     @PostMapping("/api/consultations/prescriptions")
-    public ResponseEntity<Prescription> createPrescription(@RequestBody PrescriptionRequest request,
+    public ResponseEntity<Prescription> createPrescription(@RequestBody(required = false) PrescriptionRequest request,
                                                             @AuthenticationPrincipal User user) {
-        String doctorId = getAuthenticatedDoctorId(user, request.prescription.getDoctorId());
+        if (request == null || request.prescription == null) {
+            throw new IllegalArgumentException("Prescription body is required");
+        }
         Prescription prescription = request.prescription;
+        if (prescription.getPatientId() == null || prescription.getPatientId().isBlank()) {
+            throw new IllegalArgumentException("Patient ID is required");
+        }
+        String doctorId = getAuthenticatedDoctorId(user, prescription.getDoctorId());
         Prescription authenticatedPrescription = new Prescription.Builder()
-                .setPrescriptionId(prescription.getPrescriptionId())
                 .setPatientId(prescription.getPatientId())
                 .setDoctorId(doctorId)
                 .setDateIssued(prescription.getDateIssued())
                 .setExpiryDate(prescription.getExpiryDate())
                 .setInstructions(prescription.getInstructions())
                 .setRefillsAllowed(prescription.getRefillsAllowed())
-                .setRefillsUsed(prescription.getRefillsUsed())
-                .setStatus(prescription.getStatus())
-                .setProcessingStatus(prescription.getProcessingStatus())
                 .build();
         return ResponseEntity.ok(consultationService.createPrescription(authenticatedPrescription, request.items));
     }

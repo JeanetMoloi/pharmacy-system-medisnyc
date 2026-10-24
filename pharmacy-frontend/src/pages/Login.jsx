@@ -1,7 +1,7 @@
 
 
-import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { Field, Alert } from "../components/Field";
 import { useAuth } from "../context/useAuth";
@@ -9,17 +9,25 @@ import { parseApiError } from "../utils/parseApiError";
 import "../components/Form.css";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [form, setForm] = useState({ username: location.state?.username || "", password: "" });
+  const [showRegisteredMessage, setShowRegisteredMessage] = useState(Boolean(location.state?.registered));
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (location.state?.registered) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
+
   function update(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setShowRegisteredMessage(false);
   }
 
   async function handleSubmit(e) {
@@ -40,6 +48,8 @@ export default function Login() {
     }
   }
 
+  if (user) return <Navigate to="/dashboard" replace />;
+
   return (
     <AuthLayout
       eyebrow="Account access"
@@ -53,8 +63,8 @@ export default function Login() {
     >
       <form onSubmit={handleSubmit} noValidate>
         <Alert type="error">{error}</Alert>
-        {location.state?.justRegistered && (
-          <Alert type="success">Account created — sign in with your new username and password.</Alert>
+        {showRegisteredMessage && (
+          <Alert type="success">Your account has been created. Please sign in.</Alert>
         )}
 
         <Field

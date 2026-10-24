@@ -6,6 +6,7 @@ package za.ac.cput.medisnyc.controller;
 */
 
 import za.ac.cput.medisnyc.domain.Prescription;
+import za.ac.cput.medisnyc.domain.PrescriptionStatus;
 import za.ac.cput.medisnyc.domain.User;
 import za.ac.cput.medisnyc.service.PrescriptionProcessingService;
 import org.springframework.security.access.AccessDeniedException;
@@ -86,5 +87,15 @@ public class PrescriptionProcessingController {
     @PutMapping("/{prescriptionId}/advance")
     public ResponseEntity<Prescription> advanceStatus(@PathVariable String prescriptionId) {
         return ResponseEntity.ok(processingService.advanceStatus(prescriptionId));
+    }
+
+    public static class PrescriptionStatusRequest {
+        public PrescriptionStatus status;
+    }
+
+    @PutMapping("/{prescriptionId}/status")
+    public ResponseEntity<Prescription> updateClinicalStatus(@PathVariable String prescriptionId,
+                                                              @RequestBody PrescriptionStatusRequest request) {
+        return ResponseEntity.ok(processingService.updateClinicalStatus(prescriptionId, request.status));
     }
 }

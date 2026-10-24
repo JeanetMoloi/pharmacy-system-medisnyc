@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "../components/AppShell";
 import AdminNav from "../components/AdminNav";
-import { Alert } from "../components/Field";
+import { Alert, Field } from "../components/Field";
 import * as adminApi from "../api/adminApi.js";
 import { parseApiError } from "../utils/parseApiError";
 import "./Admin.css";
@@ -11,14 +11,51 @@ export default function AuditLog() {
     const [logs, setLogs] = useState([]);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [filters, setFilters] = useState({ username: "", action: "" });
+    const [appliedFilters, setAppliedFilters] = useState({ username: "", action: "" });
 
-    useEffect(() => {
+    function load(targetPage, nextFilters = appliedFilters) {
+        setLoading(true);
+        setError("");
         adminApi
-            .getAuditLogs()
-            .then((data) => setLogs([...data].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))))
+            .getAuditLogs({ page: targetPage, size: 25, ...nextFilters })
+            .then((data) => {
+                setLogs(data.content);
+                setPage(data.page);
+                setTotalPages(data.totalPages);
+            })
             .catch((err) => setError(parseApiError(err).message))
             .finally(() => setLoading(false));
+    }
+
+    useEffect(() => {
+        let active = true;
+        adminApi
+            .getAuditLogs({ page: 0, size: 25 })
+            .then((data) => {
+                if (!active) return;
+                setLogs(data.content);
+                setPage(data.page);
+                setTotalPages(data.totalPages);
+            })
+            .catch((err) => {
+                if (active) setError(parseApiError(err).message);
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
+        return () => {
+            active = false;
+        };
     }, []);
+
+    function applyFilters(event) {
+        event.preventDefault();
+        setAppliedFilters(filters);
+        load(0, filters);
+    }
 
     return (
         <AppShell>
@@ -31,6 +68,20 @@ export default function AuditLog() {
             <AdminNav />
 
             <Alert type="error">{error}</Alert>
+
+            <form onSubmit={applyFilters} className="book-card" style={{ display: "flex", gap: "12px", alignItems: "end", marginBottom: "18px" }}>
+                <Field
+                    label="Username"
+                    value={filters.username}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, username: event.target.value }))}
+                />
+                <Field
+                    label="Action"
+                    value={filters.action}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, action: event.target.value }))}
+                />
+                <button className="btn-primary" type="submit" style={{ width: "auto" }}>Filter</button>
+            </form>
 
             {loading ? (
                 <p className="appts-loading">Loading audit log…</p>
@@ -59,6 +110,17 @@ export default function AuditLog() {
                     ))}
                     </tbody>
                 </table>
+            )}
+            {!loading && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "14px", marginTop: "16px" }}>
+                    <button className="btn-secondary" disabled={page <= 0} onClick={() => load(page - 1)}>
+                        Previous
+                    </button>
+                    <span>Page {totalPages === 0 ? 0 : page + 1} of {totalPages}</span>
+                    <button className="btn-secondary" disabled={page + 1 >= totalPages} onClick={() => load(page + 1)}>
+                        Next
+                    </button>
+                </div>
             )}
         </AppShell>
     );

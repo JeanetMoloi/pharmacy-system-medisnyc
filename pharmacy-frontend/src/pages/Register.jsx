@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { Field, Alert } from "../components/Field";
 import { useAuth } from "../context/useAuth";
@@ -18,7 +18,7 @@ const EMPTY_FORM = {
 };
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState(EMPTY_FORM);
@@ -51,7 +51,10 @@ export default function Register() {
         password: form.password,
         role: "PATIENT",
       });
-      navigate("/dashboard", { replace: true });
+      navigate("/login", {
+        replace: true,
+        state: { registered: true, username: form.username },
+      });
     } catch (err) {
       const parsed = parseApiError(err);
       setError(parsed.message);
@@ -60,6 +63,8 @@ export default function Register() {
       setSubmitting(false);
     }
   }
+
+  if (user) return <Navigate to="/dashboard" replace />;
 
   return (
     <AuthLayout

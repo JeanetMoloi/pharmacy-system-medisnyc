@@ -10,6 +10,8 @@ import za.ac.cput.medisnyc.domain.Inventory;
 import za.ac.cput.medisnyc.domain.Order;
 import za.ac.cput.medisnyc.domain.OrderItem;
 import za.ac.cput.medisnyc.domain.OrderStatus;
+import za.ac.cput.medisnyc.domain.Prescription;
+import za.ac.cput.medisnyc.domain.PrescriptionItem;
 import za.ac.cput.medisnyc.factory.OrderFactory;
 import za.ac.cput.medisnyc.repository.jpa.InventoryJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.OrderItemJpaRepository;
@@ -22,9 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.time.LocalDate;
 
 @Service
-public class OrderService {
+public class OrderService implements PrescriptionOrderService {
 
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
@@ -54,6 +59,64 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
         return attachItems(List.of(order)).get(0);
+    }
+
+    public Order getByPrescriptionId(String prescriptionId) {
+        return orderRepository.findFirstByPrescriptionId(prescriptionId)
+                .map(order -> getById(order.getOrderId()))
+                .orElse(null);
+    }
+
+    @Transactional
+    public void cancelForPrescription(String prescriptionId, String actingUsername) {
+        Order order = getByPrescriptionId(prescriptionId);
+        if (order != null && (order.getDispensingStatus() == OrderStatus.PENDING
+                || order.getDispensingStatus() == OrderStatus.PROCESSING)) {
+            updateStatus(order.getOrderId(), OrderStatus.CANCELLED, actingUsername);
+        }
+    }
+
+    @Transactional
+    public Order createForPrescription(Prescription prescription, List<PrescriptionItem> prescriptionItems) {
+        Order existingOrder = getByPrescriptionId(prescription.getPrescriptionId());
+        if (existingOrder != null) {
+            return existingOrder.getDispensingStatus() == OrderStatus.PENDING
+                    ? updateStatus(existingOrder.getOrderId(), OrderStatus.PROCESSING, "SYSTEM")
+                    : existingOrder;
+        }
+        if (prescriptionItems == null || prescriptionItems.isEmpty()) {
+            throw new IllegalStateException("Prescription has no medication items");
+        }
+
+        Map<String, Integer> requestedByMedication = new LinkedHashMap<>();
+        for (PrescriptionItem item : prescriptionItems) {
+            requestedByMedication.merge(item.getMedicationId(), item.getQuantity(), Integer::sum);
+        }
+
+        List<ItemRequest> allocation = new ArrayList<>();
+        List<String> unavailable = new ArrayList<>();
+        for (Map.Entry<String, Integer> request : requestedByMedication.entrySet()) {
+            int remaining = request.getValue();
+            List<Inventory> batches = inventoryRepository
+                    .findByMedicationIdAndExpiryDateGreaterThanEqualOrderByExpiryDateAsc(
+                            request.getKey(), LocalDate.now());
+            for (Inventory batch : batches) {
+                int allocated = Math.min(remaining, batch.getStockLevel());
+                if (allocated > 0) {
+                    allocation.add(new ItemRequest(request.getKey(), batch.getInventoryId(), allocated));
+                    remaining -= allocated;
+                }
+                if (remaining == 0) break;
+            }
+            if (remaining > 0) unavailable.add(request.getKey());
+        }
+        if (!unavailable.isEmpty()) {
+            throw new IllegalStateException("Insufficient stock for medications: " + String.join(", ", unavailable));
+        }
+
+        Order order = create(prescription.getPatientId(), prescription.getPrescriptionId(), "SYSTEM",
+                "Automatically created for prescription " + prescription.getPrescriptionId(), allocation);
+        return updateStatus(order.getOrderId(), OrderStatus.PROCESSING, "SYSTEM");
     }
 
     private List<Order> attachItems(List<Order> orders) {
@@ -106,7 +169,7 @@ public class OrderService {
                 throw new IllegalArgumentException("Medication does not match stock batch " + req.inventoryId());
             }
             if (!batch.canFulfillOrder(req.quantity())) {
-                throw new IllegalArgumentException(
+                throw new IllegalStateException(
                         "Not enough stock for " + batch.getMedicationId() + " (have " + batch.getStockLevel()
                                 + ", need " + req.quantity() + ") or stock is expired");
             }

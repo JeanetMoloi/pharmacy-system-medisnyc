@@ -53,7 +53,10 @@ export default function PrescriptionQueue() {
                     : prev.map((p) => (p.prescriptionId === prescriptionId ? updated : p))
             );
         } catch (err) {
-            setError(parseApiError(err).message);
+            const message = parseApiError(err).message;
+            setError(message.toLowerCase().includes("insufficient stock")
+                ? `Cannot start preparation. ${message}`
+                : message);
         } finally {
             setAdvancingId(null);
         }
@@ -83,6 +86,9 @@ export default function PrescriptionQueue() {
                                 <div className="appts-row-id">{p.prescriptionId}</div>
                                 <div className="appts-row-parties">Patient: {p.patientId}</div>
                                 <div className="appts-row-parties">Doctor: {p.doctorId}</div>
+                                {p.linkedOrderId && (
+                                    <div className="appts-row-parties">Order: {p.linkedOrderId}</div>
+                                )}
                             </div>
                             <div className="appts-row-side">
                                 <StatusBadge status={p.processingStatus} />

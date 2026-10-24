@@ -33,16 +33,18 @@ export function linkExistingDoctorProfile(userId, doctorId) {
         .then((res) => res.data);
 }
 
-export function deleteUser(userId) {
-    return client.delete(`/api/admin/users/${userId}`);
+export function deleteUser(userId, hard = false) {
+    return client.delete(`/api/admin/users/${userId}`, { params: { hard } });
 }
 
 export function createDoctorLogin({ doctorId, username, email, password }) {
     return client.post("/api/admin/users/doctor-login", { doctorId, username, email, password }).then((res) => res.data);
 }
 
-export function getAuditLogs() {
-    return client.get("/api/admin/audit-logs").then((res) => res.data);
+export function getAuditLogs({ page = 0, size = 25, username = "", action = "" } = {}) {
+    return client.get("/api/admin/audit-logs", {
+        params: { page, size, username: username || undefined, action: action || undefined },
+    }).then((res) => res.data);
 }
 
 export function getDashboardStatistics() {

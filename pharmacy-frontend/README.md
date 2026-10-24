@@ -33,3 +33,10 @@ to the correct site.
 The database-backed Spring context test is opt-in with
 `RUN_DB_INTEGRATION_TESTS=true`; it requires a configured MySQL database and
 JWT key.
+
+The bootstrap administrator is enabled by default. Configure it with
+`ADMIN_USERNAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` before starting the
+backend. The defaults are `admin`, `admin@medisync.example`, and
+`Admin@12345`; override the password for any non-local deployment. The seeder
+creates the account only if that username does not already exist and never
+logs the password.

@@ -1,0 +1,144 @@
+package za.ac.cput.medisnyc.service;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import za.ac.cput.medisnyc.domain.Inventory;
+import za.ac.cput.medisnyc.domain.Order;
+import za.ac.cput.medisnyc.domain.OrderStatus;
+import za.ac.cput.medisnyc.domain.OrderItem;
+import za.ac.cput.medisnyc.domain.Prescription;
+import za.ac.cput.medisnyc.domain.PrescriptionItem;
+import za.ac.cput.medisnyc.repository.jpa.InventoryJpaRepository;
+import za.ac.cput.medisnyc.repository.jpa.OrderItemJpaRepository;
+import za.ac.cput.medisnyc.repository.jpa.OrderJpaRepository;
+import za.ac.cput.medisnyc.repository.jpa.AuditLogJpaRepository;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class OrderServicePrescriptionTest {
+
+    @Test
+    void createsProcessingOrderUsingEarliestExpiryStockAcrossBatches() {
+        Inventory early = batch("INV-EARLY", 3, LocalDate.now().plusDays(10));
+        Inventory late = batch("INV-LATE", 5, LocalDate.now().plusDays(20));
+        InventoryJpaRepository inventory = mock(InventoryJpaRepository.class);
+        when(inventory.findByMedicationIdAndExpiryDateGreaterThanEqualOrderByExpiryDateAsc(
+                "MED-1", LocalDate.now())).thenReturn(List.of(early, late));
+        when(inventory.findByIdForUpdate("INV-EARLY")).thenReturn(Optional.of(early));
+        when(inventory.findByIdForUpdate("INV-LATE")).thenReturn(Optional.of(late));
+        OrderJpaRepository orders = mock(OrderJpaRepository.class);
+        AtomicReference<Order> savedOrder = new AtomicReference<>();
+        when(orders.findFirstByPrescriptionId("RX-1")).thenReturn(Optional.empty());
+        when(orders.save(any(Order.class))).thenAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            savedOrder.set(order);
+            return order;
+        });
+        when(orders.findById(anyString())).thenAnswer(invocation -> Optional.ofNullable(savedOrder.get()));
+        OrderItemJpaRepository orderItems = mock(OrderItemJpaRepository.class);
+        when(orderItems.findByOrderId(anyString())).thenReturn(List.of());
+        OrderService service = service(orders, orderItems, inventory);
+        Prescription prescription = prescription();
+
+        Order order = service.createForPrescription(prescription, List.of(item("MED-1", 6)));
+
+        assertEquals("RX-1", order.getPrescriptionId());
+        assertEquals(OrderStatus.PROCESSING, order.getDispensingStatus());
+        verify(inventory, times(2)).save(any(Inventory.class));
+        ArgumentCaptor<OrderItem> savedItems = ArgumentCaptor.forClass(OrderItem.class);
+        verify(orderItems, times(2)).save(savedItems.capture());
+        assertEquals(List.of(3, 3), savedItems.getAllValues().stream().map(OrderItem::getQuantity).toList());
+        assertEquals(List.of("INV-EARLY", "INV-LATE"),
+                savedItems.getAllValues().stream().map(OrderItem::getInventoryId).toList());
+    }
+
+    @Test
+    void reportsAllInsufficientMedicationsWithoutCreatingOrder() {
+        InventoryJpaRepository inventory = mock(InventoryJpaRepository.class);
+        when(inventory.findByMedicationIdAndExpiryDateGreaterThanEqualOrderByExpiryDateAsc(
+                anyString(), any())).thenReturn(List.of());
+        OrderJpaRepository orders = mock(OrderJpaRepository.class);
+        when(orders.findFirstByPrescriptionId("RX-1")).thenReturn(Optional.empty());
+        OrderService service = service(orders, mock(OrderItemJpaRepository.class), inventory);
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> service.createForPrescription(prescription(),
+                        List.of(item("MED-1", 4), item("MED-2", 2))));
+
+        assertEquals("Insufficient stock for medications: MED-1, MED-2", error.getMessage());
+        verify(orders, never()).save(any(Order.class));
+    }
+
+    @Test
+    void returnsExistingOrderInsteadOfCreatingDuplicate() {
+        Order existing = new Order.Builder()
+                .setOrderId("ORD-1")
+                .setPatientId("PAT-1")
+                .setPrescriptionId("RX-1")
+                .setDispensingStatus(OrderStatus.PROCESSING)
+                .build();
+        OrderJpaRepository orders = mock(OrderJpaRepository.class);
+        when(orders.findFirstByPrescriptionId("RX-1")).thenReturn(Optional.of(existing));
+        when(orders.findById("ORD-1")).thenReturn(Optional.of(existing));
+        OrderItemJpaRepository items = mock(OrderItemJpaRepository.class);
+        when(items.findByOrderId("ORD-1")).thenReturn(List.of());
+        InventoryJpaRepository inventory = mock(InventoryJpaRepository.class);
+        OrderService service = service(orders, items, inventory);
+
+        Order result = service.createForPrescription(prescription(), List.of(item("MED-1", 1)));
+
+        assertNotSame(existing, result);
+        assertEquals(existing.getOrderId(), result.getOrderId());
+        verify(orders, never()).save(any(Order.class));
+        verify(inventory, never()).findByMedicationIdAndExpiryDateGreaterThanEqualOrderByExpiryDateAsc(
+                anyString(), any());
+    }
+
+    private OrderService service(OrderJpaRepository orders, OrderItemJpaRepository items,
+                                 InventoryJpaRepository inventory) {
+        return new OrderService(orders, items, inventory,
+                new AuditLogService(mock(AuditLogJpaRepository.class)));
+    }
+
+    private Prescription prescription() {
+        return new Prescription.Builder()
+                .setPrescriptionId("RX-1")
+                .setPatientId("PAT-1")
+                .build();
+    }
+
+    private PrescriptionItem item(String medicationId, int quantity) {
+        return new PrescriptionItem.Builder()
+                .setPrescriptionItemId("RXI-" + medicationId)
+                .setPrescriptionId("RX-1")
+                .setMedicationId(medicationId)
+                .setQuantity(quantity)
+                .build();
+    }
+
+    private Inventory batch(String inventoryId, int stock, LocalDate expiry) {
+        return new Inventory.Builder()
+                .setInventoryId(inventoryId)
+                .setMedicationId("MED-1")
+                .setStockLevel(stock)
+                .setExpiryDate(expiry)
+                .setBatchNumber("B-" + inventoryId)
+                .setUnitPrice(new BigDecimal("2.50"))
+                .build();
+    }
+}

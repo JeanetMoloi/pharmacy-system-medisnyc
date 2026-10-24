@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.time.LocalDate;
 
 public interface InventoryJpaRepository extends JpaRepository<Inventory, String> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -14,5 +15,7 @@ public interface InventoryJpaRepository extends JpaRepository<Inventory, String>
     java.util.Optional<Inventory> findByIdForUpdate(@Param("inventoryId") String inventoryId);
 
     List<Inventory> findByMedicationId(String medicationId);
+    List<Inventory> findByMedicationIdAndExpiryDateGreaterThanEqualOrderByExpiryDateAsc(String medicationId,
+                                                                                         LocalDate expiryDate);
     List<Inventory> findByStockLevelLessThanEqual(int reorderLevel);
 }

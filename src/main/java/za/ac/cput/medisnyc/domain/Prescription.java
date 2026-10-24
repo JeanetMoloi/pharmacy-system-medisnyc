@@ -11,6 +11,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import java.time.LocalDate;
 
@@ -33,6 +34,8 @@ public class Prescription {
     // separate from the clinical status (ACTIVE/EXPIRED/CANCELLED) above.
     @Enumerated(EnumType.STRING)
     private PrescriptionProcessingStatus processingStatus;
+    @Transient
+    private String linkedOrderId;
 
     protected Prescription() {
     }
@@ -49,12 +52,16 @@ public class Prescription {
         this.status = builder.status;
         this.processingStatus = builder.processingStatus != null ?
                 builder.processingStatus : PrescriptionProcessingStatus.PENDING;
+        this.linkedOrderId = builder.linkedOrderId;
     }
 
     public PrescriptionProcessingStatus getProcessingStatus() {
         return processingStatus;
     }
 
+    public String getLinkedOrderId() {
+        return linkedOrderId;
+    }
 
     public String getPrescriptionId() {
         return prescriptionId; }
@@ -107,6 +114,7 @@ public class Prescription {
         private int refillsUsed;
         private PrescriptionStatus status;
         private PrescriptionProcessingStatus processingStatus;
+        private String linkedOrderId;
 
         public Builder setPrescriptionId(String prescriptionId) {
             this.prescriptionId = prescriptionId;
@@ -155,6 +163,11 @@ public class Prescription {
 
         public Builder setProcessingStatus(PrescriptionProcessingStatus processingStatus) {
             this.processingStatus = processingStatus;
+            return this;
+        }
+
+        public Builder setLinkedOrderId(String linkedOrderId) {
+            this.linkedOrderId = linkedOrderId;
             return this;
         }
 

@@ -9,7 +9,11 @@ package za.ac.cput.medisnyc.service;
 import za.ac.cput.medisnyc.domain.Prescription;
 import za.ac.cput.medisnyc.domain.PrescriptionCollection;
 import za.ac.cput.medisnyc.domain.PrescriptionProcessingStatus;
+import za.ac.cput.medisnyc.domain.PrescriptionStatus;
+import za.ac.cput.medisnyc.domain.Order;
+import za.ac.cput.medisnyc.domain.OrderStatus;
 import za.ac.cput.medisnyc.repository.jpa.PrescriptionCollectionJpaRepository;
+import za.ac.cput.medisnyc.repository.jpa.PrescriptionItemJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.PrescriptionJpaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -26,6 +31,8 @@ public class PrescriptionProcessingService {
     private final PrescriptionCollectionJpaRepository collectionRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final PrescriptionItemJpaRepository prescriptionItemRepository;
+    private final PrescriptionOrderService orderService;
 
     // Defines which status can move to which next status.
     private static final Map<PrescriptionProcessingStatus, PrescriptionProcessingStatus> NEXT_STATUS = Map.of(
@@ -39,17 +46,23 @@ public class PrescriptionProcessingService {
     public PrescriptionProcessingService(PrescriptionJpaRepository prescriptionRepository,
                                          PrescriptionCollectionJpaRepository collectionRepository,
                                          NotificationService notificationService,
-                                         AuditLogService auditLogService) {
+                                         AuditLogService auditLogService,
+                                         PrescriptionItemJpaRepository prescriptionItemRepository,
+                                         PrescriptionOrderService orderService) {
         this.prescriptionRepository = prescriptionRepository;
         this.collectionRepository = collectionRepository;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
+        this.prescriptionItemRepository = prescriptionItemRepository;
+        this.orderService = orderService;
     }
 
     public List<Prescription> getQueue() {
         // Everything not yet collected - the pharmacist's prescription queue.
         return prescriptionRepository.findAll().stream()
-                .filter(p -> p.getProcessingStatus() != PrescriptionProcessingStatus.COLLECTED)
+                .filter(p -> p.getStatus() == PrescriptionStatus.ACTIVE
+                        && p.getProcessingStatus() != PrescriptionProcessingStatus.COLLECTED)
+                .map(p -> withLinkedOrder(p, orderService.getByPrescriptionId(p.getPrescriptionId())))
                 .toList();
     }
 
@@ -74,12 +87,29 @@ public class PrescriptionProcessingService {
 
     @Transactional
     public Prescription advanceStatus(String prescriptionId) {
-        Prescription existing = getById(prescriptionId);
+        Prescription existing = prescriptionRepository.findByIdForUpdate(prescriptionId)
+                .orElseThrow(() -> new IllegalArgumentException("Prescription not found: " + prescriptionId));
+        if (existing.getStatus() != PrescriptionStatus.ACTIVE) {
+            throw new IllegalStateException("Prescription is " + existing.getStatus().name().toLowerCase());
+        }
+        if (existing.getExpiryDate() != null && existing.getExpiryDate().isBefore(LocalDate.now())) {
+            Prescription expired = copyWithStatus(existing, PrescriptionStatus.EXPIRED);
+            Prescription savedExpired = prescriptionRepository.save(expired);
+            orderService.cancelForPrescription(prescriptionId, "SYSTEM");
+            auditLogService.log("SYSTEM", "EXPIRE_PRESCRIPTION", prescriptionId,
+                    "Prescription expired before collection");
+            return withLinkedOrder(savedExpired, orderService.getByPrescriptionId(prescriptionId));
+        }
         PrescriptionProcessingStatus current = existing.getProcessingStatus();
         PrescriptionProcessingStatus next = NEXT_STATUS.get(current);
 
         if (next == null) {
             throw new IllegalStateException("Prescription is already at its final status: " + current);
+        }
+
+        if (next == PrescriptionProcessingStatus.PREPARING) {
+            orderService.createForPrescription(existing,
+                    prescriptionItemRepository.findByPrescriptionId(prescriptionId));
         }
 
         Prescription updated = new Prescription.Builder()
@@ -111,8 +141,62 @@ public class PrescriptionProcessingService {
                     .setPatientId(saved.getPatientId())
                     .build();
             collectionRepository.save(collection);
+            var order = orderService.getByPrescriptionId(saved.getPrescriptionId());
+            if (order == null) {
+                throw new IllegalStateException("No order is linked to prescription " + saved.getPrescriptionId());
+            }
+            orderService.updateStatus(order.getOrderId(), OrderStatus.DISPENSED, "SYSTEM");
+            orderService.updateStatus(order.getOrderId(), OrderStatus.COMPLETED, "SYSTEM");
         }
 
-        return saved;
+        return withLinkedOrder(saved, orderService.getByPrescriptionId(saved.getPrescriptionId()));
+    }
+
+    @Transactional
+    public Prescription updateClinicalStatus(String prescriptionId, PrescriptionStatus status) {
+        if (status == null || status == PrescriptionStatus.ACTIVE) {
+            throw new IllegalArgumentException("Prescription status must be CANCELLED or EXPIRED");
+        }
+        Prescription existing = getById(prescriptionId);
+        if (existing.getProcessingStatus() == PrescriptionProcessingStatus.COLLECTED) {
+            throw new IllegalStateException("Collected prescriptions cannot be cancelled or expired");
+        }
+        Prescription updated = copyWithStatus(existing, status);
+        Prescription saved = prescriptionRepository.save(updated);
+        orderService.cancelForPrescription(prescriptionId, "SYSTEM");
+        auditLogService.log("SYSTEM", "UPDATE_PRESCRIPTION_STATUS", prescriptionId,
+                "Prescription status changed to " + status);
+        return withLinkedOrder(saved, orderService.getByPrescriptionId(prescriptionId));
+    }
+
+    private Prescription copyWithStatus(Prescription prescription, PrescriptionStatus status) {
+        return new Prescription.Builder()
+                .setPrescriptionId(prescription.getPrescriptionId())
+                .setPatientId(prescription.getPatientId())
+                .setDoctorId(prescription.getDoctorId())
+                .setDateIssued(prescription.getDateIssued())
+                .setExpiryDate(prescription.getExpiryDate())
+                .setInstructions(prescription.getInstructions())
+                .setRefillsAllowed(prescription.getRefillsAllowed())
+                .setRefillsUsed(prescription.getRefillsUsed())
+                .setStatus(status)
+                .setProcessingStatus(prescription.getProcessingStatus())
+                .build();
+    }
+
+    private Prescription withLinkedOrder(Prescription prescription, Order order) {
+        return new Prescription.Builder()
+                .setPrescriptionId(prescription.getPrescriptionId())
+                .setPatientId(prescription.getPatientId())
+                .setDoctorId(prescription.getDoctorId())
+                .setDateIssued(prescription.getDateIssued())
+                .setExpiryDate(prescription.getExpiryDate())
+                .setInstructions(prescription.getInstructions())
+                .setRefillsAllowed(prescription.getRefillsAllowed())
+                .setRefillsUsed(prescription.getRefillsUsed())
+                .setStatus(prescription.getStatus())
+                .setProcessingStatus(prescription.getProcessingStatus())
+                .setLinkedOrderId(order == null ? null : order.getOrderId())
+                .build();
     }
 }

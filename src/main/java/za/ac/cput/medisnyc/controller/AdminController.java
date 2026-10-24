@@ -7,10 +7,13 @@ package za.ac.cput.medisnyc.controller;
 
 import za.ac.cput.medisnyc.domain.AuditLog;
 import za.ac.cput.medisnyc.domain.User;
+import za.ac.cput.medisnyc.dto.UserResponse;
 import za.ac.cput.medisnyc.service.AuditLogService;
 import za.ac.cput.medisnyc.service.UserManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,59 +37,77 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userManagementService.getAllUsers());
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(userManagementService.getAllUsers().stream().map(UserResponse::from).toList());
     }
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<User> getUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(userManagementService.getUser(userId));
+    public ResponseEntity<UserResponse> getUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(UserResponse.from(userManagementService.getUser(userId)));
     }
 
     @PutMapping("/users/{userId}/enabled")
-    public ResponseEntity<User> setEnabled(@PathVariable Long userId, @RequestParam boolean enabled) {
-        return ResponseEntity.ok(userManagementService.setEnabled(userId, enabled));
+    public ResponseEntity<UserResponse> setEnabled(@PathVariable Long userId, @RequestParam boolean enabled,
+                                                    @AuthenticationPrincipal User actingAdmin) {
+        return ResponseEntity.ok(UserResponse.from(userManagementService.setEnabled(userId, enabled, actingAdmin)));
     }
 
     @PutMapping("/users/{userId}/roles")
-    public ResponseEntity<User> assignRole(@PathVariable Long userId, @RequestParam String role) {
-        return ResponseEntity.ok(userManagementService.assignRole(userId, role));
+    public ResponseEntity<UserResponse> assignRole(@PathVariable Long userId, @RequestParam String role,
+                                                    @AuthenticationPrincipal User actingAdmin) {
+        return ResponseEntity.ok(UserResponse.from(userManagementService.assignRole(userId, role, actingAdmin)));
     }
 
     @PutMapping("/users/{userId}/linked-profile")
-    public ResponseEntity<User> setLinkedProfile(@PathVariable Long userId,
-                                                 @RequestParam String linkedProfileId) {
-        return ResponseEntity.ok(userManagementService.linkProfile(userId, linkedProfileId));
+    public ResponseEntity<UserResponse> setLinkedProfile(@PathVariable Long userId,
+                                                         @RequestParam String linkedProfileId,
+                                                         @AuthenticationPrincipal User actingAdmin) {
+        return ResponseEntity.ok(UserResponse.from(
+                userManagementService.linkProfile(userId, linkedProfileId, actingAdmin)));
     }
 
     @PutMapping("/users/{userId}/link-patient")
-    public ResponseEntity<User> linkPatient(@PathVariable Long userId,
-                                            @Valid @RequestBody LinkPatientRequest request) {
-        return ResponseEntity.ok(userManagementService.linkNewPatient(userId,
-                request.phoneNumber, request.dateOfBirth));
+    public ResponseEntity<UserResponse> linkPatient(@PathVariable Long userId,
+                                                    @Valid @RequestBody LinkPatientRequest request,
+                                                    @AuthenticationPrincipal User actingAdmin) {
+        return ResponseEntity.ok(UserResponse.from(userManagementService.linkNewPatient(userId,
+                request.phoneNumber, request.dateOfBirth, actingAdmin)));
     }
 
     @PutMapping("/users/{userId}/link-doctor")
-    public ResponseEntity<User> linkDoctor(@PathVariable Long userId, @RequestParam String doctorId) {
-        return ResponseEntity.ok(userManagementService.linkDoctor(userId, doctorId));
+    public ResponseEntity<UserResponse> linkDoctor(@PathVariable Long userId, @RequestParam String doctorId,
+                                                   @AuthenticationPrincipal User actingAdmin) {
+        return ResponseEntity.ok(UserResponse.from(userManagementService.linkDoctor(userId, doctorId, actingAdmin)));
     }
 
     @PostMapping("/users/doctor-login")
-    public ResponseEntity<User> createDoctorLogin(@Valid @RequestBody CreateDoctorLoginRequest request) {
-        return ResponseEntity.status(201).body(userManagementService.createDoctorLogin(
-                request.doctorId, request.username, request.email, request.password));
+    public ResponseEntity<UserResponse> createDoctorLogin(@Valid @RequestBody CreateDoctorLoginRequest request,
+                                                          @AuthenticationPrincipal User actingAdmin) {
+        return ResponseEntity.status(201).body(UserResponse.from(userManagementService.createDoctorLogin(
+                request.doctorId, request.username, request.email, request.password, actingAdmin)));
     }
 
     @DeleteMapping("/users/{userId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
-        userManagementService.deleteUser(userId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteUser(@PathVariable Long userId,
+                                        @RequestParam(defaultValue = "false") boolean hard,
+                                        @AuthenticationPrincipal User actingAdmin) {
+        User affected = userManagementService.deleteUser(userId, hard, actingAdmin);
+        return hard ? ResponseEntity.noContent().build() : ResponseEntity.ok(UserResponse.from(affected));
     }
 
     @GetMapping("/audit-logs")
-    public ResponseEntity<List<AuditLog>> getAuditLogs() {
-        return ResponseEntity.ok(auditLogService.getAll());
+    public ResponseEntity<AuditLogPageResponse> getAuditLogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String action) {
+        Page<AuditLog> result = auditLogService.getPage(page, size, username, action);
+        return ResponseEntity.ok(new AuditLogPageResponse(result.getContent(), result.getNumber(),
+                result.getSize(), result.getTotalElements(), result.getTotalPages()));
     }
+
+    public record AuditLogPageResponse(List<AuditLog> content, int page, int size,
+                                       long totalElements, int totalPages) {}
 
     public static class LinkPatientRequest {
         @NotBlank

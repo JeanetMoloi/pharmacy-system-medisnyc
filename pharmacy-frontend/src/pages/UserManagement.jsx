@@ -8,6 +8,7 @@ import CreateDoctorLoginForm from "../components/CreateDoctorLoginForm.jsx";
 import * as adminApi from "../api/adminApi.js";
 import * as doctorApi from "../api/doctorApi";
 import { parseApiError } from "../utils/parseApiError";
+import { useAuth } from "../context/useAuth";
 import "./Admin.css";
 import "./Appointments.css";
 
@@ -19,10 +20,11 @@ const LINKABLE_ROLES = new Set(["PATIENT", "DOCTOR"]);
 
 function primaryRoleName(user) {
   const role = (user.roles || [])[0];
-  return role ? role.name.replace(/^ROLE_/, "") : "";
+  return role ? role.replace(/^ROLE_/, "") : "";
 }
 
 export default function UserManagement() {
+  const { user: loggedInUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -66,11 +68,13 @@ export default function UserManagement() {
   }
 
   async function handleToggleEnabled(user) {
-    setBusyId(user.userId);
+    if (user.username === loggedInUser?.username && user.enabled) return;
+    if (user.enabled && !window.confirm(`Disable ${user.username}? They will no longer be able to sign in.`)) return;
+    setBusyId(user.id);
     setError("");
     try {
-      const updated = await adminApi.setUserEnabled(user.userId, !user.enabled);
-      setUsers((prev) => prev.map((u) => (u.userId === user.userId ? updated : u)));
+      const updated = await adminApi.setUserEnabled(user.id, !user.enabled);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
     } catch (err) {
       setError(parseApiError(err).message);
     } finally {
@@ -80,16 +84,17 @@ export default function UserManagement() {
 
   async function handleAssignRole(user, role) {
     if (!role) return;
-    setBusyId(user.userId);
+    if (user.username === loggedInUser?.username) return;
+    setBusyId(user.id);
     setError("");
     try {
-      const updated = await adminApi.assignRole(user.userId, role);
-      setUsers((prev) => prev.map((u) => (u.userId === user.userId ? updated : u)));
+      const updated = await adminApi.assignRole(user.id, role);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
       // Closing the gap where a role change used to leave an account silently
       // unlinked: if the new role needs a profile and doesn't have one yet,
       // walk straight into the same inline form used for backfilling.
       if (LINKABLE_ROLES.has(role) && !updated.linkedProfileId) {
-        openLinkForm(user.userId);
+        openLinkForm(user.id);
       }
     } catch (err) {
       setError(parseApiError(err).message);
@@ -99,12 +104,13 @@ export default function UserManagement() {
   }
 
   async function handleDelete(user) {
-    if (!window.confirm(`Delete ${user.username}? This can't be undone.`)) return;
-    setBusyId(user.userId);
+    if (user.username === loggedInUser?.username) return;
+    if (!window.confirm(`Delete ${user.username}? This will soft-disable the account and preserve its history.`)) return;
+    setBusyId(user.id);
     setError("");
     try {
-      await adminApi.deleteUser(user.userId);
-      setUsers((prev) => prev.filter((u) => u.userId !== user.userId));
+      const updated = await adminApi.deleteUser(user.id);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
     } catch (err) {
       setError(parseApiError(err).message);
     } finally {
@@ -120,11 +126,11 @@ export default function UserManagement() {
     setLinkSubmitting(true);
     setLinkError("");
     try {
-      const updated = await adminApi.linkNewPatientProfile(user.userId, {
+      const updated = await adminApi.linkNewPatientProfile(user.id, {
         phoneNumber: linkForm.phoneNumber.trim(),
         dateOfBirth: linkForm.dateOfBirth,
       });
-      setUsers((prev) => prev.map((u) => (u.userId === user.userId ? updated : u)));
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
       closeLinkForm();
     } catch (err) {
       setLinkError(parseApiError(err).message);
@@ -141,8 +147,8 @@ export default function UserManagement() {
     setLinkSubmitting(true);
     setLinkError("");
     try {
-      const updated = await adminApi.linkExistingDoctorProfile(user.userId, linkForm.doctorId);
-      setUsers((prev) => prev.map((u) => (u.userId === user.userId ? updated : u)));
+      const updated = await adminApi.linkExistingDoctorProfile(user.id, linkForm.doctorId);
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
       closeLinkForm();
     } catch (err) {
       setLinkError(parseApiError(err).message);
@@ -158,7 +164,7 @@ export default function UserManagement() {
       return <span className="linked-id-value" style={{ color: "var(--ink-soft)" }}>—</span>;
     }
 
-    if (linkingUserId === user.userId) {
+    if (linkingUserId === user.id) {
       return (
         <div className="link-profile-form">
           {role === "PATIENT" ? (
@@ -212,7 +218,7 @@ export default function UserManagement() {
       return (
         <div>
           <span className="linked-id-value">{user.linkedProfileId}</span>
-          <button className="linked-id-change-btn" onClick={() => openLinkForm(user.userId)}>
+          <button className="linked-id-change-btn" onClick={() => openLinkForm(user.id)}>
             Change
           </button>
         </div>
@@ -222,7 +228,7 @@ export default function UserManagement() {
     return (
       <div>
         <span className="pill-unlinked">Not linked</span>
-        <button className="link-profile-btn" onClick={() => openLinkForm(user.userId)}>
+        <button className="link-profile-btn" onClick={() => openLinkForm(user.id)}>
           Link profile
         </button>
       </div>
@@ -301,10 +307,10 @@ export default function UserManagement() {
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.userId}>
+              <tr key={u.id}>
                 <td>{u.username}</td>
                 <td>{u.email}</td>
-                <td>{(u.roles || []).map((r) => r.name.replace(/^ROLE_/, "")).join(", ")}</td>
+                <td>{(u.roles || []).map((role) => role.replace(/^ROLE_/, "")).join(", ")}</td>
                 <td>{renderLinkedProfileCell(u)}</td>
                 <td>
                   <span className={u.enabled ? "pill-enabled" : "pill-disabled"}>
@@ -315,7 +321,7 @@ export default function UserManagement() {
                   <select
                     className="admin-role-select"
                     defaultValue=""
-                    disabled={busyId === u.userId}
+                    disabled={busyId === u.id || u.username === loggedInUser?.username}
                     onChange={(e) => handleAssignRole(u, e.target.value)}
                   >
                     <option value="">Assign role…</option>
@@ -327,12 +333,12 @@ export default function UserManagement() {
                   </select>
                   <button
                     className="admin-toggle-btn"
-                    disabled={busyId === u.userId}
+                    disabled={busyId === u.id || (u.username === loggedInUser?.username && u.enabled)}
                     onClick={() => handleToggleEnabled(u)}
                   >
                     {u.enabled ? "Disable" : "Enable"}
                   </button>
-                  <button className="admin-delete-btn" disabled={busyId === u.userId} onClick={() => handleDelete(u)}>
+                  <button className="admin-delete-btn" disabled={busyId === u.id || u.username === loggedInUser?.username} onClick={() => handleDelete(u)}>
                     Delete
                   </button>
                 </td>
