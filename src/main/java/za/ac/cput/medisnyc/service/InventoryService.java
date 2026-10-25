@@ -1,6 +1,7 @@
 package za.ac.cput.medisnyc.service;
 
 import za.ac.cput.medisnyc.domain.Inventory;
+import za.ac.cput.medisnyc.domain.Medication;
 import za.ac.cput.medisnyc.dto.AdjustStockRequest;
 import za.ac.cput.medisnyc.dto.InventorySummary;
 import za.ac.cput.medisnyc.dto.ReceiveStockRequest;
@@ -79,7 +80,12 @@ public class InventoryService {
                 .build();
         Inventory saved = inventoryRepository.save(received);
         auditLogService.log(actingUsername, "RECEIVE_STOCK", saved.getInventoryId(),
-                "before=<none>; after=" + saved + "; reason=RECEIVED");
+                inventoryAuditSummary(saved) + "; stockLevel=" + saved.getStockLevel()
+                        + "; expiryDate=" + saved.getExpiryDate()
+                        + "; batchNumber=" + saved.getBatchNumber()
+                        + "; unitPrice=" + saved.getUnitPrice()
+                        + "; reorderLevel=" + saved.getReorderLevel()
+                        + "; reason=RECEIVED");
         return saved;
     }
 
@@ -112,7 +118,9 @@ public class InventoryService {
         Inventory after = getById(inventoryId);
         int actualDelta = after.getStockLevel() - before.getStockLevel();
         auditLogService.log(actingUsername, "ADJUST_STOCK", inventoryId,
-                "before=" + before + "; after=" + after + "; delta=" + actualDelta
+                inventoryAuditSummary(after)
+                        + "; stockLevel=" + before.getStockLevel() + "->" + after.getStockLevel()
+                        + "; delta=" + actualDelta
                         + "; reason=" + request.reason());
         return after;
     }
@@ -131,6 +139,18 @@ public class InventoryService {
 
     public List<Inventory> getExpiredStock() {
         return inventoryRepository.findExpiredStock(LocalDate.now());
+    }
+
+    private String inventoryAuditSummary(Inventory inventory) {
+        Medication medication = medicationRepository.findById(inventory.getMedicationId()).orElse(null);
+        String medicineDetails = medication == null
+                ? "medicine=<unknown>"
+                : "medicine=" + medication.getMedicationName()
+                        + "; strength=" + medication.getStrength()
+                        + "; form=" + medication.getDosageForm();
+        return "inventoryId=" + inventory.getInventoryId()
+                + "; medicationId=" + inventory.getMedicationId()
+                + "; " + medicineDetails;
     }
 
     public List<InventorySummary> getSummary() {

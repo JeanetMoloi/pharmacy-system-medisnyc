@@ -11,7 +11,9 @@ import za.ac.cput.medisnyc.repository.jpa.PrescriptionItemJpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -58,7 +60,7 @@ public class MedicationService {
                 .build();
         Medication saved = medicationRepository.save(medication);
         auditLogService.log(actingUsername, "CREATE_MEDICATION", saved.getMedicationId(),
-                "before=<none>; after=" + saved + "; reason=MEDICATION_CREATED");
+                medicationAuditSummary(saved) + "; reason=MEDICATION_CREATED");
         return saved;
     }
 
@@ -77,7 +79,8 @@ public class MedicationService {
                 .build();
         Medication saved = medicationRepository.save(updated);
         auditLogService.log(actingUsername, "UPDATE_MEDICATION", medicationId,
-                "before=" + before + "; after=" + saved + "; reason=MEDICATION_UPDATED");
+                medicationAuditSummary(saved) + "; changed=" + changedMedicationFields(before, saved)
+                        + "; reason=MEDICATION_UPDATED");
         return saved;
     }
 
@@ -93,7 +96,7 @@ public class MedicationService {
         inventoryRepository.deleteByMedicationIdAndStockLevelLessThanEqual(medicationId, 0);
         medicationRepository.deleteById(medicationId);
         auditLogService.log(actingUsername, "DELETE_MEDICATION", medicationId,
-                "before=" + medication + "; after=<deleted>; reason=MEDICATION_DELETED");
+                medicationAuditSummary(medication) + "; reason=MEDICATION_DELETED");
     }
 
     public List<Medication> search(String name) {
@@ -103,6 +106,30 @@ public class MedicationService {
     private void rejectDuplicate(String name, String strength, String dosageForm, String excludedId) {
         if (medicationRepository.existsDuplicate(name.trim(), strength.trim(), dosageForm.trim(), excludedId)) {
             throw new IllegalStateException("A medication with the same name, strength, and dosage form already exists");
+        }
+    }
+
+    private String medicationAuditSummary(Medication medication) {
+        return "medicationId=" + medication.getMedicationId()
+                + "; name=" + medication.getMedicationName()
+                + "; strength=" + medication.getStrength()
+                + "; form=" + medication.getDosageForm();
+    }
+
+    private List<String> changedMedicationFields(Medication before, Medication after) {
+        List<String> changes = new ArrayList<>();
+        addChange(changes, "name", before.getMedicationName(), after.getMedicationName());
+        addChange(changes, "strength", before.getStrength(), after.getStrength());
+        addChange(changes, "form", before.getDosageForm(), after.getDosageForm());
+        addChange(changes, "category", before.getCategory(), after.getCategory());
+        addChange(changes, "manufacturer", before.getManufacturer(), after.getManufacturer());
+        addChange(changes, "description", before.getDescription(), after.getDescription());
+        return changes;
+    }
+
+    private void addChange(List<String> changes, String field, Object before, Object after) {
+        if (!Objects.equals(before, after)) {
+            changes.add(field + ":" + before + "->" + after);
         }
     }
 }

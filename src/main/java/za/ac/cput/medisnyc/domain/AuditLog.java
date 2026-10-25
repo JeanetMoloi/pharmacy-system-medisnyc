@@ -7,6 +7,7 @@ package za.ac.cput.medisnyc.domain;
 */
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,6 +27,7 @@ public class AuditLog {
     private String username;
     private String action;
     private String entityAffected;
+    @Column(length = 2000)
     private String details;
     private LocalDateTime timestamp;
 

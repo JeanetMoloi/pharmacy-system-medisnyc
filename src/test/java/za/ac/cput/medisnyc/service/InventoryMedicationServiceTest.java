@@ -72,14 +72,22 @@ class InventoryMedicationServiceTest {
                 }
                 """, ReceiveStockRequest.class);
         when(medicationRepository.existsById("MED-1")).thenReturn(true);
-        when(inventoryRepository.save(any(Inventory.class))).thenAnswer(invocation -> invocation.getArgument(0));
+                when(medicationRepository.findById("MED-1")).thenReturn(Optional.of(medication("MED-1")));
+                when(inventoryRepository.save(any(Inventory.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Inventory saved = inventoryService.receiveStock(request, "pharmacist-user");
 
         assertTrue(saved.getInventoryId().startsWith("INV-"));
         assertNotEquals("INV-CLIENT", saved.getInventoryId());
+        ArgumentCaptor<String> details = ArgumentCaptor.forClass(String.class);
         verify(auditLogService).log(eq("pharmacist-user"), eq("RECEIVE_STOCK"), eq(saved.getInventoryId()),
-                contains("stockLevel=5"));
+                details.capture());
+        assertTrue(details.getValue().contains("inventoryId=" + saved.getInventoryId()));
+        assertTrue(details.getValue().contains("medicationId=MED-1"));
+        assertTrue(details.getValue().contains("medicine=Medicine"));
+        assertTrue(details.getValue().contains("strength=10 mg"));
+        assertTrue(details.getValue().contains("form=Tablet"));
+        assertTrue(details.getValue().contains("stockLevel=5"));
     }
 
     @Test
@@ -122,8 +130,7 @@ class InventoryMedicationServiceTest {
         verify(inventoryRepository, never()).save(any());
         ArgumentCaptor<String> details = ArgumentCaptor.forClass(String.class);
         verify(auditLogService).log(eq("pharmacist-user"), eq("ADJUST_STOCK"), eq("INV-1"), details.capture());
-        assertTrue(details.getValue().contains("stockLevel=3"));
-        assertTrue(details.getValue().contains("stockLevel=5"));
+        assertTrue(details.getValue().contains("stockLevel=3->5"));
         assertTrue(details.getValue().contains("reason=STOCK_TAKE"));
     }
 
@@ -185,6 +192,27 @@ class InventoryMedicationServiceTest {
                 new UpdateMedicationRequest("New name", "10 mg", "Tablet", "Analgesic", null, null), "admin");
 
         assertEquals("MED-PATH", result.getMedicationId());
+    }
+
+    @Test
+    void medicineAuditDetailsAreCompact() {
+        when(medicationRepository.existsDuplicate(anyString(), anyString(), anyString(), isNull()))
+                .thenReturn(false);
+        when(medicationRepository.save(any(Medication.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Medication saved = medicationService.addMedicine(
+                new CreateMedicationRequest("Audit medicine", "10 mg", "Tablet",
+                        "Analgesic", null, null), "admin");
+
+        ArgumentCaptor<String> details = ArgumentCaptor.forClass(String.class);
+        verify(auditLogService).log(eq("admin"), eq("CREATE_MEDICATION"), eq(saved.getMedicationId()),
+                details.capture());
+        assertTrue(details.getValue().length() < 2000);
+        assertTrue(details.getValue().contains(saved.getMedicationId()));
+        assertTrue(details.getValue().contains("Audit medicine"));
+        assertTrue(details.getValue().contains("10 mg"));
+        assertTrue(details.getValue().contains("Tablet"));
+        assertFalse(details.getValue().contains("description="));
     }
 
     @Test
