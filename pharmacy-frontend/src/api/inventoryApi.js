@@ -7,6 +7,10 @@ export function getAllInventory() {
     return client.get("/api/inventory").then((res) => res.data);
 }
 
+export function getInventorySummary() {
+    return client.get("/api/inventory/summary").then((res) => res.data);
+}
+
 export function getInventoryByMedication(medicationId) {
     return client.get(`/api/inventory/medication/${medicationId}`).then((res) => res.data);
 }
@@ -26,10 +30,14 @@ export function receiveStock({ medicationId, stockLevel, expiryDate, batchNumber
         .then((res) => res.data);
 }
 
-export function updateStock(inventoryId, stockLevel) {
+export function adjustStock(inventoryId, delta, reason) {
     return client
-        .put(`/api/inventory/${inventoryId}/stock`, null, { params: { stockLevel } })
+        .put(`/api/inventory/${inventoryId}/adjust`, { delta: Number(delta), reason })
         .then((res) => res.data);
+}
+
+export function writeOffExpiredStock(inventoryId, stockLevel) {
+    return adjustStock(inventoryId, -Math.abs(Number(stockLevel)), "EXPIRED_WRITE_OFF");
 }
 
 export function getLowStockAlerts() {
@@ -38,4 +46,8 @@ export function getLowStockAlerts() {
 
 export function getExpiringSoon(days = 30) {
     return client.get("/api/inventory/expiring-soon", { params: { days } }).then((res) => res.data);
+}
+
+export function getExpiredStock() {
+    return client.get("/api/inventory/expired").then((res) => res.data);
 }

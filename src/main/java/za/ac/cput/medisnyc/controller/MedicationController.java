@@ -1,14 +1,13 @@
 package za.ac.cput.medisnyc.controller;
 
-/* MedicationController.java
-   Module 4: Pharmacy Inventory Module - Medicine List/Add Medicine.
-   Author: Lisakhanya Mpahla
-*/
-
+import jakarta.validation.Valid;
 import za.ac.cput.medisnyc.domain.Medication;
+import za.ac.cput.medisnyc.domain.User;
+import za.ac.cput.medisnyc.dto.CreateMedicationRequest;
+import za.ac.cput.medisnyc.dto.UpdateMedicationRequest;
 import za.ac.cput.medisnyc.service.MedicationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +18,6 @@ public class MedicationController {
 
     private final MedicationService medicationService;
 
-    @Autowired
     public MedicationController(MedicationService medicationService) {
         this.medicationService = medicationService;
     }
@@ -40,19 +38,23 @@ public class MedicationController {
     }
 
     @PostMapping
-    public ResponseEntity<Medication> addMedicine(@RequestBody Medication medication) {
-        return ResponseEntity.ok(medicationService.addMedicine(medication));
+    public ResponseEntity<Medication> addMedicine(@Valid @RequestBody CreateMedicationRequest request,
+                                                   @AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(medicationService.addMedicine(request, actor.getUsername()));
     }
 
     @PutMapping("/{medicationId}")
     public ResponseEntity<Medication> updateMedicine(@PathVariable String medicationId,
-                                                     @RequestBody Medication medication) {
-        return ResponseEntity.ok(medicationService.updateMedicine(medicationId, medication));
+                                                      @Valid @RequestBody UpdateMedicationRequest request,
+                                                      @AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(medicationService.updateMedicine(
+                medicationId, request, actor.getUsername()));
     }
 
     @DeleteMapping("/{medicationId}")
-    public ResponseEntity<Void> deleteMedicine(@PathVariable String medicationId) {
-        medicationService.deleteMedicine(medicationId);
+    public ResponseEntity<Void> deleteMedicine(@PathVariable String medicationId,
+                                                @AuthenticationPrincipal User actor) {
+        medicationService.deleteMedicine(medicationId, actor.getUsername());
         return ResponseEntity.noContent().build();
     }
 }

@@ -61,11 +61,12 @@ public class Inventory {
     }
 
     public boolean isExpired() {
-        return LocalDate.now().isAfter(expiryDate);
+        return expiryDate != null && expiryDate.isBefore(LocalDate.now());
     }
 
     public boolean isExpiringSoon(int days) {
-        return LocalDate.now().plusDays(days).isAfter(expiryDate) && !isExpired();
+        return stockLevel > 0 && !isExpired()
+                && !expiryDate.isAfter(LocalDate.now().plusDays(days));
     }
 
     public boolean canFulfillOrder(int quantity) {
