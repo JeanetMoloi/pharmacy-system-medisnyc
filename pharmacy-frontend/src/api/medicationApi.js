@@ -8,6 +8,10 @@ export function getAllMedications() {
     return client.get("/api/medications").then((res) => res.data);
 }
 
+export function getMedication(medicationId) {
+    return client.get(`/api/medications/${medicationId}`).then((res) => res.data);
+}
+
 export function searchMedications(name) {
     return client.get("/api/medications/search", { params: { name } }).then((res) => res.data);
 }

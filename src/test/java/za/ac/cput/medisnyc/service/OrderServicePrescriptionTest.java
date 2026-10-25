@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -59,7 +60,8 @@ class OrderServicePrescriptionTest {
 
         assertEquals("RX-1", order.getPrescriptionId());
         assertEquals(OrderStatus.PROCESSING, order.getDispensingStatus());
-        verify(inventory, times(2)).save(any(Inventory.class));
+        verify(inventory, times(2)).decrementStockAtomically(anyString(), anyInt(), any());
+        verify(inventory, never()).save(any(Inventory.class));
         ArgumentCaptor<OrderItem> savedItems = ArgumentCaptor.forClass(OrderItem.class);
         verify(orderItems, times(2)).save(savedItems.capture());
         assertEquals(List.of(3, 3), savedItems.getAllValues().stream().map(OrderItem::getQuantity).toList());
@@ -111,6 +113,8 @@ class OrderServicePrescriptionTest {
 
     private OrderService service(OrderJpaRepository orders, OrderItemJpaRepository items,
                                  InventoryJpaRepository inventory) {
+        when(inventory.decrementStockAtomically(anyString(), anyInt(), any()))
+                .thenReturn(1);
         return new OrderService(orders, items, inventory,
                 new AuditLogService(mock(AuditLogJpaRepository.class)));
     }

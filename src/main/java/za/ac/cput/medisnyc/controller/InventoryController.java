@@ -1,15 +1,14 @@
 package za.ac.cput.medisnyc.controller;
 
-
-/* InventoryController.java
-   Module 4: Pharmacy Inventory Module - Update Stock/Low Stock Alerts.
-   Author: Thakane Jeanet Moloi
-*/
-
+import jakarta.validation.Valid;
 import za.ac.cput.medisnyc.domain.Inventory;
+import za.ac.cput.medisnyc.domain.User;
+import za.ac.cput.medisnyc.dto.AdjustStockRequest;
+import za.ac.cput.medisnyc.dto.InventorySummary;
+import za.ac.cput.medisnyc.dto.ReceiveStockRequest;
 import za.ac.cput.medisnyc.service.InventoryService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,7 +19,6 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
-    @Autowired
     public InventoryController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
     }
@@ -28,6 +26,11 @@ public class InventoryController {
     @GetMapping
     public ResponseEntity<List<Inventory>> getAll() {
         return ResponseEntity.ok(inventoryService.getAll());
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<List<InventorySummary>> getSummary() {
+        return ResponseEntity.ok(inventoryService.getSummary());
     }
 
     @GetMapping("/{inventoryId}")
@@ -41,14 +44,17 @@ public class InventoryController {
     }
 
     @PostMapping
-    public ResponseEntity<Inventory> receiveStock(@RequestBody Inventory inventory) {
-        return ResponseEntity.ok(inventoryService.receiveStock(inventory));
+    public ResponseEntity<Inventory> receiveStock(@Valid @RequestBody ReceiveStockRequest request,
+                                                   @AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(inventoryService.receiveStock(request, actor.getUsername()));
     }
 
-    @PutMapping("/{inventoryId}/stock")
-    public ResponseEntity<Inventory> updateStock(@PathVariable String inventoryId,
-                                                 @RequestParam int stockLevel) {
-        return ResponseEntity.ok(inventoryService.updateStock(inventoryId, stockLevel));
+    @PutMapping("/{inventoryId}/adjust")
+    public ResponseEntity<Inventory> adjustStock(@PathVariable String inventoryId,
+                                                  @Valid @RequestBody AdjustStockRequest request,
+                                                  @AuthenticationPrincipal User actor) {
+        return ResponseEntity.ok(inventoryService.adjustStock(
+                inventoryId, request, actor.getUsername()));
     }
 
     @GetMapping("/low-stock")
@@ -59,5 +65,10 @@ public class InventoryController {
     @GetMapping("/expiring-soon")
     public ResponseEntity<List<Inventory>> expiringSoon(@RequestParam(defaultValue = "30") int days) {
         return ResponseEntity.ok(inventoryService.getExpiringSoon(days));
+    }
+
+    @GetMapping("/expired")
+    public ResponseEntity<List<Inventory>> expiredStock() {
+        return ResponseEntity.ok(inventoryService.getExpiredStock());
     }
 }

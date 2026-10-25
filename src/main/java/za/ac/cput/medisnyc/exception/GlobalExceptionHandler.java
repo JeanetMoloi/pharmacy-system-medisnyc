@@ -7,6 +7,8 @@ package za.ac.cput.medisnyc.exception;
 */
 
 import za.ac.cput.medisnyc.dto.ApiResponse;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import za.ac.cput.medisnyc.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -20,6 +22,11 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse> handleNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse(false, ex.getMessage()));
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse> handleIllegalArgument(IllegalArgumentException ex) {
@@ -46,6 +53,12 @@ public class GlobalExceptionHandler {
         Map<String, String> errors = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse> handleUnreadableRequest(HttpMessageNotReadableException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(false, "Request body contains invalid or missing values"));
     }
 
     @ExceptionHandler(Exception.class)

@@ -173,6 +173,11 @@ public class OrderService implements PrescriptionOrderService {
                         "Not enough stock for " + batch.getMedicationId() + " (have " + batch.getStockLevel()
                                 + ", need " + req.quantity() + ") or stock is expired");
             }
+            if (inventoryRepository.decrementStockAtomically(
+                    req.inventoryId(), req.quantity(), LocalDate.now()) == 0) {
+                throw new IllegalStateException(
+                        "Not enough available stock for " + batch.getMedicationId() + " or stock is expired");
+            }
 
             OrderItem item = new OrderItem.Builder()
                     .setOrderItemId(Helper.generateId("ORDI"))
@@ -185,19 +190,6 @@ public class OrderService implements PrescriptionOrderService {
             items.add(item);
             total = total.add(item.getSubtotal());
 
-            // Decrement stock now the order has committed to this batch.
-            Inventory updatedBatch = new Inventory.Builder()
-                    .setInventoryId(batch.getInventoryId())
-                    .setMedicationId(batch.getMedicationId())
-                    .setStockLevel(batch.getStockLevel() - req.quantity())
-                    .setExpiryDate(batch.getExpiryDate())
-                    .setBatchNumber(batch.getBatchNumber())
-                    .setSupplier(batch.getSupplier())
-                    .setUnitPrice(batch.getUnitPrice())
-                    .setReceivedDate(batch.getReceivedDate())
-                    .setReorderLevel(batch.getReorderLevel())
-                    .build();
-            inventoryRepository.save(updatedBatch);
         }
 
         Order order = OrderFactory.createOrder(orderId, patientId, prescriptionId, null,

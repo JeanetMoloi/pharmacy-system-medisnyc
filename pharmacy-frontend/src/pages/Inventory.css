@@ -28,6 +28,7 @@
 
 .inv-alert-banner {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 10px;
   background: var(--error-soft);
@@ -37,6 +38,19 @@
   padding: 12px 16px;
   font-size: 13.5px;
   margin-bottom: 24px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inv-alert-warning {
+  background: #fff8e8;
+  border-color: #f0d79d;
+  color: #805b05;
+}
+
+.inv-banner-link {
+  margin-left: auto;
+  font-weight: 600;
 }
 
 .inv-table {
@@ -109,4 +123,170 @@
   color: var(--ink-soft);
   font-size: 13.5px;
   padding: 16px;
+}
+
+.inv-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.inv-filter-input {
+  min-width: 190px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.inv-status,
+.inv-date-label {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inv-status-ok {
+  color: #286347;
+  background: #e4f1e9;
+}
+
+.inv-status-low,
+.inv-status-expiring_soon {
+  color: #805b05;
+  background: #fff1cb;
+}
+
+.inv-status-out,
+.inv-status-expired {
+  color: #983a35;
+  background: #fbe8e5;
+}
+
+.inv-batch-expired td {
+  background: #fdf0ee;
+}
+
+.inv-batch-expiring td {
+  background: #fff9eb;
+}
+
+.inv-date-expired {
+  margin-left: 6px;
+  color: #983a35;
+  background: #fbe0dc;
+}
+
+.inv-date-expiring {
+  margin-left: 6px;
+  color: #805b05;
+  background: #ffedbd;
+}
+
+.inv-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inv-actions a,
+.inv-text-button {
+  padding: 0;
+  border: 0;
+  color: var(--pine);
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.inv-actions .inv-danger-button {
+  color: var(--error);
+}
+
+.inv-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.inv-dialog-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16, 31, 26, 0.45);
+}
+
+.inv-dialog {
+  width: min(100%, 480px);
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  box-shadow: 0 18px 50px rgba(16, 31, 26, 0.22);
+}
+
+.inv-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.inv-dialog > p {
+  margin: 0 0 18px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.inv-dialog .alert {
+  margin-top: 12px;
+}
+
+.inv-preview {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--pine);
+  background: var(--paper);
+  font-weight: 700;
+}
+
+.inv-preview-error {
+  color: var(--error) !important;
+  background: var(--error-soft);
+}
+
+.inv-dialog-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.inv-dialog-actions .btn-primary,
+.inv-dialog-actions .btn-secondary {
+  flex: 1;
+}
+
+@media (max-width: 760px) {
+  .inv-filters {
+    flex-direction: column;
+  }
+
+  .inv-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 }

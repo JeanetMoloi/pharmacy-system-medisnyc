@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface PrescriptionItemJpaRepository extends JpaRepository<PrescriptionItem, String> {
     List<PrescriptionItem> findByPrescriptionId(String prescriptionId);
+    boolean existsByMedicationId(String medicationId);
 }
