@@ -40,3 +40,7 @@ backend. The defaults are `admin`, `admin@medisync.example`, and
 `Admin@12345`; override the password for any non-local deployment. The seeder
 creates the account only if that username does not already exist and never
 logs the password.
+
+The sample South African pharmacy medicine catalogue and its stock batches are
+seeded by default. Set `app.seed.sample-medications=false` in the backend
+environment to disable this data seed; the flag defaults to `true` when unset.

@@ -23,6 +23,7 @@ public interface InventoryJpaRepository extends JpaRepository<Inventory, String>
     boolean existsByMedicationIdAndStockLevelGreaterThan(String medicationId, int stockLevel);
     void deleteByMedicationIdAndStockLevelLessThanEqual(String medicationId, int stockLevel);
     boolean existsByMedicationIdAndBatchNumberIgnoreCase(String medicationId, String batchNumber);
+    boolean existsByBatchNumberIgnoreCase(String batchNumber);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
