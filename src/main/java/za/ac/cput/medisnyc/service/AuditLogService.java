@@ -18,6 +18,11 @@ import java.util.List;
 @Service
 public class AuditLogService {
 
+    private static final int USERNAME_MAX_LENGTH = 255;
+    private static final int ACTION_MAX_LENGTH = 100;
+    private static final int ENTITY_AFFECTED_MAX_LENGTH = 255;
+    private static final int DETAILS_MAX_LENGTH = 2000;
+
     private final AuditLogJpaRepository auditLogRepository;
 
     @Autowired
@@ -28,12 +33,19 @@ public class AuditLogService {
     @Transactional
     public void log(String username, String action, String entityAffected, String details) {
         AuditLog entry = new AuditLog.Builder()
-                .setUsername(username)
-                .setAction(action)
-                .setEntityAffected(entityAffected)
-                .setDetails(details)
+                .setUsername(limitLength(username, USERNAME_MAX_LENGTH))
+                .setAction(limitLength(action, ACTION_MAX_LENGTH))
+                .setEntityAffected(limitLength(entityAffected, ENTITY_AFFECTED_MAX_LENGTH))
+                .setDetails(limitLength(details, DETAILS_MAX_LENGTH))
                 .build();
         auditLogRepository.save(entry);
+    }
+
+    private String limitLength(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength - 3) + "...";
     }
 
     public List<AuditLog> getAll() {

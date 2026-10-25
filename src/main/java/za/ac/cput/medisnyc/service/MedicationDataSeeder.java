@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import za.ac.cput.medisnyc.dto.CreateMedicationRequest;
 import za.ac.cput.medisnyc.dto.ReceiveStockRequest;
 import za.ac.cput.medisnyc.repository.jpa.InventoryJpaRepository;
@@ -108,7 +107,6 @@ public class MedicationDataSeeder implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
     public void run(String... args) {
         if (!enabled) {
             logger.info("Sample medication seed disabled");
@@ -117,36 +115,65 @@ public class MedicationDataSeeder implements CommandLineRunner {
 
         int medicinesAdded = 0;
         int batchesAdded = 0;
+        int medicinesFailed = 0;
+        int batchesFailed = 0;
         LocalDate today = LocalDate.now();
         for (int index = 0; index < SAMPLE_MEDICATIONS.size(); index++) {
             MedicationSeed sample = SAMPLE_MEDICATIONS.get(index);
-            if (medicationRepository.existsDuplicate(sample.name(), sample.strength(),
-                    sample.dosageForm(), null)) {
-                continue;
-            }
             String baseBatchNumber = "MEDSYNC-SAMPLE-" + String.format("%03d", index + 1);
-            if (inventoryRepository.existsByBatchNumberIgnoreCase(baseBatchNumber + "-A")
-                    || (sample.secondBatchStock() > 0
-                    && inventoryRepository.existsByBatchNumberIgnoreCase(baseBatchNumber + "-B"))) {
-                logger.warn("Skipping sample medicine {}; a sample batch number is already in use", sample.name());
+            za.ac.cput.medisnyc.domain.Medication medication;
+            try {
+                if (medicationRepository.existsDuplicate(sample.name(), sample.strength(),
+                        sample.dosageForm(), null)) {
+                    continue;
+                }
+                if (inventoryRepository.existsByBatchNumberIgnoreCase(baseBatchNumber + "-A")
+                        || (sample.secondBatchStock() > 0
+                        && inventoryRepository.existsByBatchNumberIgnoreCase(baseBatchNumber + "-B"))) {
+                    logger.warn("Skipping sample medicine {}; a sample batch number is already in use", sample.name());
+                    continue;
+                }
+                medication = medicationService.addMedicine(new CreateMedicationRequest(
+                        sample.name(), sample.strength(), sample.dosageForm(), sample.category(),
+                        sample.manufacturer(), sample.description()), "system");
+                medicinesAdded++;
+            } catch (RuntimeException exception) {
+                medicinesFailed++;
+                logger.error("Failed to seed sample medicine {}", sample.name(), exception);
                 continue;
             }
-
-            var medication = medicationService.addMedicine(new CreateMedicationRequest(
-                    sample.name(), sample.strength(), sample.dosageForm(), sample.category(),
-                    sample.manufacturer(), sample.description()), "system");
-            medicinesAdded++;
 
             int firstExpiryDays = sample.expiryInDays() == 20 ? 20 : sample.expiryInDays();
-            batchesAdded += receiveBatch(medication.getMedicationId(), baseBatchNumber + "-A",
+            int firstBatchResult = receiveBatchSafely(medication.getMedicationId(), baseBatchNumber + "-A",
                     sample.firstBatchStock(), sample, today.plusDays(firstExpiryDays), today);
+            if (firstBatchResult < 0) {
+                batchesFailed++;
+            } else {
+                batchesAdded += firstBatchResult;
+            }
             if (sample.secondBatchStock() > 0) {
-                batchesAdded += receiveBatch(medication.getMedicationId(), baseBatchNumber + "-B",
+                int secondBatchResult = receiveBatchSafely(medication.getMedicationId(), baseBatchNumber + "-B",
                         sample.secondBatchStock(), sample, today.plusDays(firstExpiryDays + 180), today);
+                if (secondBatchResult < 0) {
+                    batchesFailed++;
+                } else {
+                    batchesAdded += secondBatchResult;
+                }
             }
         }
 
-        logger.info("Added {} sample medicines and {} inventory batches", medicinesAdded, batchesAdded);
+        logger.info("Sample seeding complete: medicines added={}, failed={}; batches added={}, failed={}",
+                medicinesAdded, medicinesFailed, batchesAdded, batchesFailed);
+    }
+
+    private int receiveBatchSafely(String medicationId, String batchNumber, int stock, MedicationSeed sample,
+                                   LocalDate expiryDate, LocalDate receivedDate) {
+        try {
+            return receiveBatch(medicationId, batchNumber, stock, sample, expiryDate, receivedDate);
+        } catch (RuntimeException exception) {
+            logger.error("Failed to seed inventory batch {} for medicine {}", batchNumber, sample.name(), exception);
+            return -1;
+        }
     }
 
     private int receiveBatch(String medicationId, String batchNumber, int stock, MedicationSeed sample,

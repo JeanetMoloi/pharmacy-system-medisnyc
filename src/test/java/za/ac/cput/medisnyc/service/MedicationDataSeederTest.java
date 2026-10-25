@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -142,6 +143,41 @@ class MedicationDataSeederTest {
                         && !batch.supplier().isBlank()));
         verify(medicationService, times(firstRunMedicines)).addMedicine(any(CreateMedicationRequest.class), eq("system"));
         verify(inventoryService, times(firstRunBatches)).receiveStock(any(ReceiveStockRequest.class), eq("system"));
+    }
+
+    @Test
+    void continuesSeedingAfterOneMedicineFails() {
+        MedicationJpaRepository medications = mock(MedicationJpaRepository.class);
+        InventoryJpaRepository inventory = mock(InventoryJpaRepository.class);
+        MedicationService medicationService = mock(MedicationService.class);
+        InventoryService inventoryService = mock(InventoryService.class);
+        AtomicInteger medicineCalls = new AtomicInteger();
+
+        when(medications.existsDuplicate(anyString(), anyString(), anyString(), isNull())).thenReturn(false);
+        when(inventory.existsByBatchNumberIgnoreCase(anyString())).thenReturn(false);
+        when(medicationService.addMedicine(any(CreateMedicationRequest.class), eq("system")))
+                .thenAnswer(invocation -> {
+                    if (medicineCalls.getAndIncrement() == 0) {
+                        throw new IllegalStateException("Invalid sample");
+                    }
+                    CreateMedicationRequest request = invocation.getArgument(0);
+                    return new Medication.Builder()
+                            .setMedicationId("MED-" + medicineCalls.get())
+                            .setMedicationName(request.medicationName())
+                            .setStrength(request.strength())
+                            .setDosageForm(request.dosageForm())
+                            .setCategory(request.category())
+                            .build();
+                });
+
+        new MedicationDataSeeder(medications, inventory, medicationService, inventoryService, true).run();
+
+        assertEquals(MedicationDataSeeder.sampleMedications().size(),
+                medicineCalls.get());
+        verify(inventoryService, times(MedicationDataSeeder.sampleMedications().subList(1,
+                        MedicationDataSeeder.sampleMedications().size()).stream()
+                .mapToInt(sample -> sample.secondBatchStock() > 0 ? 2 : 1).sum()))
+                .receiveStock(any(ReceiveStockRequest.class), eq("system"));
     }
 
     @Test
