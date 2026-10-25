@@ -8,11 +8,11 @@ import za.ac.cput.medisnyc.repository.jpa.InventoryJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.MedicationJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.OrderItemJpaRepository;
 import za.ac.cput.medisnyc.repository.jpa.PrescriptionItemJpaRepository;
-import za.ac.cput.medisnyc.util.Helper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MedicationService {
@@ -48,7 +48,7 @@ public class MedicationService {
     public Medication addMedicine(CreateMedicationRequest request, String actingUsername) {
         rejectDuplicate(request.medicationName(), request.strength(), request.dosageForm(), null);
         Medication medication = new Medication.Builder()
-                .setMedicationId(Helper.generateId("MED"))
+                .setMedicationId("MED-" + UUID.randomUUID())
                 .setMedicationName(request.medicationName().trim())
                 .setDosageForm(request.dosageForm().trim())
                 .setManufacturer(request.manufacturer())
